@@ -127,7 +127,7 @@ Notion은 할 일의 원본이다. 반복은 Notion에 만들지 않고 규칙 �
 - Calendar API는 planner MCP만 호출한다. Hermes 기본 Google Workspace 스킬은 설치하지 않는다. 이 스킬은 Gmail·Drive를 포함한 전체 범위를 요청하고, 설치하면 LLM이 승인 흐름을 거치지 않고 캘린더에 쓸 수 있다.
 - OAuth 범위는 `calendar.events` 하나다. 캘린더 네 개는 사람이 직접 만들고, ID는 `planner.yaml`에 적는다.
 - OAuth 동의 화면은 게시 상태를 "프로덕션"으로 둔다. "테스트" 상태에서는 refresh token이 7일 뒤 만료된다. 미인증 앱 경고는 본인만 쓰므로 무시한다.
-- 최초 인증은 데스크톱에서 planner의 인증 스크립트로 한 번 하고, 만든 토큰 파일을 서버 `data/planner/`로 복사한다.
+- 최초 인증은 데스크톱에서 planner의 인증 스크립트로 한 번 하고, 만든 토큰 파일을 서버 `~/assistant-data/planner/`로 복사한다.
 - 폰에서는 Google Calendar 앱으로 타임라인과 알림을, Notion Calendar 앱으로 Notion 마감을 함께 확인한다.
 
 ## 플래너 규칙 파일
@@ -263,17 +263,31 @@ assistant/
    ├─ compose.yaml    # hermes, camofox
    ├─ Dockerfile      # FROM nousresearch/hermes-agent + mcp/
    ├─ .env.example
-   ├─ hermes/config.yaml   # 기준 설정. 서버 data/로 복사해 쓴다
+   ├─ hermes/config.yaml   # 기준 설정. 서버 ~/assistant-data/로 복사해 쓴다
    └─ planner.yaml.example
 ```
 
-서버는 빌드된 이미지를 받아 실행만 한다. Hermes 공식 이미지는 모든 상태를 `/opt/data` 하나에 두므로 서버의 `data/`를 그대로 마운트한다.
+**서버**
+
+| 항목 | 값 |
+| --- | --- |
+| CPU | Intel Core i5-7200U (2코어 4스레드, x86_64) |
+| 메모리 | 12GB |
+| OS | Ubuntu Server |
+| 실행 방식 | Docker Compose. 이미지는 이 서버에서 직접 빌드한다 |
+
+- 서버가 `linux/amd64`이므로 빌드와 실행 아키텍처가 같다. 다른 기기에서 빌드하거나 레지스트리에 올리지 않는다.
+- 메모리는 hermes와 camofox만 고려한다. camofox는 `mem_limit: 2g`로 시작하고, 실제 사용량을 보고 조정한다. LLM은 모두 외부 API이므로 서버에서 모델을 돌리지 않는다.
+- CPU가 2코어이므로 빌드는 의존성 레이어를 캐시해 다시 빌드할 때 `mcp/` 코드 레이어만 바뀌게 한다.
+
+서버에는 이 저장소를 clone해 두고, 상태 디렉터리는 저장소 밖에 둔다. `git clean` 같은 저장소 작업이 토큰을 지우지 않게 하기 위해서다. Hermes 공식 이미지는 모든 상태를 `/opt/data` 하나에 두므로 이 디렉터리를 그대로 마운트한다.
 
 ```
-~/homeserver/
-├─ compose.yaml
-├─ .env               # compose 변수 (이미지 태그 등)
-└─ data/              # → hermes:/opt/data
+~/assistant/                # 이 저장소 (git clone)
+└─ deploy/
+   ├─ compose.yaml          # build: hermes 이미지, data 경로는 .env로 지정
+   └─ .env                  # compose 변수 (DATA_DIR 등), 커밋 안 함
+~/assistant-data/           # → hermes:/opt/data
    ├─ config.yaml     # Hermes가 부팅 시 마이그레이션하며 고쳐 쓸 수 있음
    ├─ .env            # Discord, Notion, EXAONE 키
    ├─ auth.json       # openai-codex 토큰
@@ -283,15 +297,15 @@ assistant/
 
 | 컨테이너 | 내용 | 설정 |
 | --- | --- | --- |
-| hermes | 게이트웨이, cron, planner·jobs MCP | `restart: unless-stopped`, `data/` → `/opt/data`, `TZ=Asia/Seoul` |
+| hermes | 게이트웨이, cron, planner·jobs MCP | `build: deploy/Dockerfile`, `restart: unless-stopped`, `~/assistant-data` → `/opt/data`, `TZ=Asia/Seoul` |
 | camofox | 안티디텍션 브라우저 (`ghcr.io/jo-inc/camofox-browser`, 버전 고정) | `mem_limit` 설정, 외부 포트 노출 없음 |
 
-**이미지 빌드**
+**이미지 빌드와 배포**
 
-- `deploy/Dockerfile`은 공식 이미지 위에 `mcp/`와 의존성을 얹는다. 공식 이미지에 `uv`가 PATH에 없으면 여기서 설치한다.
-- GitHub Actions로 GHCR(private)에 올린다. 로컬 빌드는 데스크톱(x86)에서 하고, 맥북(arm64)에서는 `--platform linux/amd64`를 붙인다.
-- 배포: 서버에서 `docker compose pull && docker compose up -d`.
-- 초기에는 `mcp/`를 컨테이너에 bind mount해 서버에서 바로 고치며 만들고, 안정화되면 이미지로 고정한다.
+- `deploy/Dockerfile`은 공식 이미지(`nousresearch/hermes-agent`, 버전 태그 고정) 위에 `mcp/`와 의존성을 얹는다. 공식 이미지에 `uv`가 PATH에 없으면 여기서 설치한다.
+- 빌드와 배포는 모두 서버에서 한다: `cd ~/assistant && git pull && docker compose -f deploy/compose.yaml up -d --build`.
+- 공식 이미지 버전을 올릴 때는 Dockerfile의 태그를 바꿔 커밋하고 같은 명령으로 다시 빌드한다. 문제가 생기면 이전 커밋으로 되돌려 다시 빌드한다.
+- 초기에는 `mcp/`를 컨테이너에 bind mount해 서버에서 바로 고치며 만들고, 안정화되면 bind mount를 빼고 이미지에 포함한다.
 - `config.yaml`은 Hermes가 고쳐 쓸 수 있으므로 저장소의 파일은 기준본으로 두고, 서버 쪽과 달라지면 차이를 확인해 저장소에 반영한다.
 
 **보안**
@@ -301,7 +315,7 @@ assistant/
 - Google OAuth는 `calendar.events`만, Notion 토큰은 세 DB에만 공유.
 - stdio MCP에는 PATH, HOME 등 일부를 빼고 환경 변수가 전달되지 않으므로 필요한 키만 `env` 블록에 명시한다.
 - 서버 외부 접근은 Tailscale로만 한다.
-- `data/`에는 토큰이 모두 들어 있으므로 백업은 암호화해 서버 밖에 둔다.
+- `~/assistant-data/`에는 토큰이 모두 들어 있으므로 백업은 암호화해 서버 밖에 둔다.
 
 ## 구현 순서
 
@@ -316,7 +330,7 @@ assistant/
 - [ ] **planner MCP v2**: `propose_plan`, `apply_plan`, 22:30·08:00 cron
 - [ ] **planner MCP v3**: `reschedule`, `revert_plan`, 자동 반영, 주간 계획 cron
 - [ ] **jobs MCP**: 수집·중복 제거·알림, Camofox 컨테이너 추가, 키 만료 알림 cron
-- [ ] **고정**: Dockerfile·GHCR 배포, 1\~2주 사용 후 `planner.yaml`·자동 반영 기준 조정
+- [ ] **고정**: bind mount 제거, Dockerfile로 `mcp/` 포함한 이미지 빌드, 1\~2주 사용 후 `planner.yaml`·자동 반영 기준 조정
 
 ## 미결정 사항
 
@@ -337,3 +351,5 @@ assistant/
 | 2026-11-19 | K-EXAONE은 채용 공고에만 쓰고, 압축은 GPT로 옮긴다 | 입출력이 학습에 쓰이는 약관이라 개인 데이터를 보내지 않는다 |
 | 2026-11-19 | 문서·MCP·배포를 이 저장소 하나에 둔다 (`homeserver-mcp` 분리 안 함) | 문서와 코드가 함께 바뀐다 |
 | 2026-11-19 | Hermes 상태는 `/opt/data` 단일 마운트, `auxiliary.web_extract` 삭제 | 공식 이미지 구조와 설정 키 확인 결과 |
+| 2026-11-19 | 이미지는 홈서버(x86_64)에서 직접 빌드하고, GHCR·GitHub Actions는 쓰지 않는다 | 서버 하나뿐이고 빌드·실행 아키텍처가 같다 |
+| 2026-11-19 | 상태 디렉터리 `~/assistant-data`를 저장소 밖에 둔다 | 저장소 작업이 토큰을 지우지 않게 한다 |

@@ -2,6 +2,8 @@
 
 홈서버의 Hermes Agent 위에서 Discord로 대화하는 개인 비서. 이 저장소는 설계 문서, MCP 서버(planner, jobs), 배포 설정을 함께 둔다.
 
+대상 서버는 x86_64 Ubuntu Server(i5-7200U, 2코어 4스레드, RAM 12GB) 한 대다. 이 서버에 저장소를 clone해 Docker 이미지를 직접 빌드하고 Compose로 실행한다. 레지스트리는 쓰지 않는다. 의존성과 리소스는 이 사양 기준으로 고른다.
+
 ## 기준 문서
 
 - `docs/homeserver-hermes-architecture.md`: 설계의 원본. 작업 전에 관련 절을 읽고 그대로 따른다.
