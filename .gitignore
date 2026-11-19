@@ -1,0 +1,15 @@
+# secrets and runtime state
+.env
+*.env
+!.env.example
+data/
+google_token.json
+*.sqlite
+*.sqlite3
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
