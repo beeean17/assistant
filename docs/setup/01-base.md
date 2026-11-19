@@ -39,12 +39,12 @@
    ```
 
 2. Tailscale 관리 콘솔(Machines)에서 이 서버의 **Disable key expiry**를 켠다. 끄지 않으면 기기 키가 만료될 때 서버가 tailnet에서 빠진다.
-3. 데스크톱의 `~/.ssh/config`에 서버를 `homeserver`로 등록하고 `ssh homeserver`로 접속되는지 확인한다. 배포 스크립트(`deploy/deploy.sh`)가 이 이름을 쓴다. 다른 이름을 쓰려면 `ASSISTANT_HOST`로 지정한다.
+3. 데스크톱의 `~/.ssh/config`에 서버를 `server`로 등록하고 `ssh server`로 접속되는지 확인한다. 배포 스크립트(`deploy/deploy.sh`)가 이 이름을 쓴다. 다른 이름을 쓰려면 `ASSISTANT_HOST`로 지정한다.
 
    ```
-   Host homeserver
-     HostName <서버의 Tailscale 이름 또는 IP>
-     User <서버 사용자>
+   Host server
+     HostName server        # Tailscale 기기 이름 (안 되면 Tailscale IP)
+     User yoon
    ```
 4. 접속이 확인된 뒤에만 방화벽을 켠다. 실수로 막히면 서버 앞에서 직접 로그인해 `sudo ufw disable`로 푼다.
 

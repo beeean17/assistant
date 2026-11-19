@@ -2,13 +2,13 @@
 # Deploy origin/main to the home server over SSH (Tailscale).
 #
 # Usage: deploy/deploy.sh [--logs]
-#   ASSISTANT_HOST  SSH host of the server (default: homeserver, an ~/.ssh/config alias)
+#   ASSISTANT_HOST  SSH host of the server (default: server, an ~/.ssh/config alias)
 #   --logs          follow container logs after deploying (Ctrl+C to stop)
 #
 # The server pulls from GitHub, so only pushed commits on main are deployed.
 set -euo pipefail
 
-host="${ASSISTANT_HOST:-homeserver}"
+host="${ASSISTANT_HOST:-server}"
 follow_logs=false
 
 case "${1:-}" in
