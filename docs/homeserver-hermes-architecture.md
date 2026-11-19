@@ -11,9 +11,10 @@ Nov 19, 2026 · @성빈 · 최종 수정 Nov 20, 2026
 - **미래 일정 관리**: 고정 일정 사이 빈 시간에 할 일과 루틴을 시간 블록으로 배치하고, 변경이 생기면 다시 배치한다.
 - **프로젝트 관리**: 프로젝트를 단계와 할 일로 나누고, 단계 기간을 캘린더 막대로 보여주며, 마감 전에 시간이 모자라는 단계를 미리 알린다.
 - **채용 공고 알림**: 금융권 IT·데이터·핀테크 공고를 주기적으로 수집해 새 공고만 Discord로 알린다.
+- **자료 수집**: Discord로 보낸 링크와 글을 읽고, 다른 저장소(`dev-rules`)에 어떻게 반영할지 정리해 Notion 수집함에 쌓아 둔다. 반영은 데스크톱의 Claude Code가 한다.
 - **대화 기억**: 가끔 나누는 대화에서 중요한 내용을 기억하고, 과거 대화를 검색한다.
 
-**범위 밖**: 코딩 작업, 실제 행동 기록(트래킹).
+**범위 밖**: 코딩 작업(저장소 수정 포함), 실제 행동 기록(트래킹).
 
 **원칙**
 
@@ -32,13 +33,14 @@ Nov 19, 2026 · @성빈 · 최종 수정 Nov 20, 2026
 │ gateway · cron · memory                       │      │ 안티디텍션 브라우저 │
 │  ├─ planner MCP ──► Notion API                │      │ REST :9377          │
 │  │              └─► Google Calendar API       │      └──────────▲──────────┘
+│  ├─ inbox MCP ────► 웹 글, Notion Inbox       │                 │
 │  └─ jobs MCP ─────► 채용 사이트 ──(막힐 때만)──┼─────────────────┘
 └───────┬───────────────────────────────────────┘
         ├─► ChatGPT 구독 (openai-codex): 대화, 계획, 컨텍스트 압축
         └─► K-EXAONE API: 채용 공고 수집·요약, GPT 실패 시 fallback
 ```
 
-Discord가 유일한 입력 창구다. 시간은 Google Calendar, 할 일은 Notion이 원본이고, Hermes는 MCP로 둘을 읽고 쓴다. Calendar와 Notion에 접근하는 자격 증명은 planner MCP만 가진다.
+Discord가 유일한 입력 창구다. 시간은 Google Calendar, 할 일은 Notion이 원본이고, Hermes는 MCP로 둘을 읽고 쓴다. Calendar 자격 증명과 "비서" 페이지의 Notion 토큰은 planner MCP만 가진다. inbox MCP는 Inbox DB에만 닿는 별도 Notion 토큰을 쓴다.
 
 ## 모델 배분
 
@@ -50,6 +52,7 @@ Discord가 유일한 입력 창구다. 시간은 Google Calendar, 할 일은 Not
 | 주간 계획 | GPT 상위: `gpt-6.2-astra` | cron 작업별 `--model` |
 | 컨텍스트 압축, 키 만료 알림 | GPT 경량: `gpt-6-luna` | `auxiliary.compression`, cron 작업별 `--model` |
 | 채용 공고 수집·요약 | K-EXAONE 2.5 | cron 작업별 `--model --provider` |
+| 자료 분석 | GPT 메인 | 지정하지 않음 (`model.default`) |
 | GPT 실패 시 (한도 초과 429, 서버 오류 5xx, 인증 실패 401/403) | K-EXAONE 2.5 | `fallback_providers` |
 
 **연결**
@@ -123,6 +126,22 @@ Notion은 프로젝트와 할 일의 원본이다. 반복은 Notion에 만들지
 | 마감 | Date (시각 포함) | "마감" 캘린더에도 반영 |
 | 상태 | Status | 관심 / 지원 / 서류 / 면접 / 결과 |
 
+**Inbox** (자료 수집함)
+
+| 속성 | 타입 | 비고 |
+| --- | --- | --- |
+| 제목 | Title | 대기 중에는 링크나 글의 첫 줄, 분석 후에는 글 제목 |
+| 링크 | URL | 중복 저장 방지 키. 붙여 넣은 글이면 비운다 |
+| 메모 | Text | 보낼 때 덧붙인 말 |
+| 대상 | Select | 반영할 저장소. 지금은 dev-rules 하나 |
+| 주제 | Select | 문서 구조 / 브랜치·PR / 요구사항 / 테스트 전략 / 에이전트 지침 / 기타 |
+| 상태 | Status | 대기(to_do) / 분석됨(in_progress) / 반영 · 보류 · 실패(complete) |
+| PR | URL | 반영한 PR. Claude Code가 채운다 |
+
+- 페이지 본문에 요약, 핵심 내용, 반영 제안, 확인할 점을 쓴다. 링크로 받은 글의 원문은 저장하지 않는다. 붙여 넣은 글은 분석할 때까지 본문에 둔다.
+- Inbox는 "비서" 페이지가 아니라 별도 "자료" 페이지 아래에 둔다. planner의 integration이 읽지 못하고, inbox의 integration은 다른 DB를 읽지 못한다.
+- 상태는 이 DB의 대기열이기도 하다. 대기는 수집 cron이, 분석됨은 Claude Code가 가져간다. 실패한 항목을 다시 시도하려면 상태를 대기로 되돌린다.
+
 **동기화 원칙**
 
 - 할 일의 내용(제목, 상태, 마감)은 Notion에서만 수정한다. 프로젝트와 단계의 내용(이름, 기간, 상태)도 같다.
@@ -187,7 +206,7 @@ project:           # 프로젝트 점검 (아래 참고)
 
 ## MCP 서버와 도구
 
-MCP는 planner와 jobs 두 개를 Python(FastMCP, stdio)으로 만들고 Hermes 컨테이너 안에서 실행한다. 각 MCP는 독립된 uv 프로젝트로 두고, 서버 진입점은 한 파일로, 배치 알고리즘처럼 테스트가 필요한 로직은 별도 모듈로 나눈다.
+MCP는 planner, inbox, jobs 세 개를 Python(FastMCP, stdio)으로 만들고 Hermes 컨테이너 안에서 실행한다. 각 MCP는 독립된 uv 프로젝트로 두고, 서버 진입점은 한 파일로, 배치 알고리즘처럼 테스트가 필요한 로직은 별도 모듈로 나눈다.
 
 **planner MCP** (Notion API + Google Calendar API)
 
@@ -285,6 +304,56 @@ LLM은 자연어 해석, 소요 시간 추정, 우선순위 판단, 프로젝트
 - 로그인이 필요한 사이트(LinkedIn 등)는 본 계정으로 자동화하지 않는다.
 - `save_to_notion`은 Discord 대화(GPT)에서만 호출한다. 수집 cron에는 노출하지 않는다.
 
+**inbox MCP** (웹 가져오기 + Notion Inbox)
+
+| 도구 | 여는 곳 | 역할 |
+| --- | --- | --- |
+| `capture(url?, text?, note?)` | Discord 대화 | 대기 항목을 만든다. 같은 링크가 이미 있으면 만들지 않고 기존 항목을 반환한다. 페이지를 읽지 않는다 |
+| `next_item()` | 수집 cron | 대기 항목 하나를 꺼내 본문 텍스트와 메모를 반환한다. 가져오기는 코드가 한다 |
+| `save_analysis(item_id, title, topic, summary, proposal, questions)` | 수집 cron | 분석을 Notion 페이지 본문에 쓰고 상태를 분석됨으로 바꾼다 |
+
+### 자료 수집
+
+1. Discord로 링크나 글을 보낸다. 한마디 덧붙일 수 있다("테스트 전략에 참고").
+2. 대화의 에이전트가 `capture`로 대기 항목을 만든다. 내용은 읽지 않는다.
+3. 수집 cron이 `next_item`으로 본문을 받아 분석하고 `save_analysis`로 남긴다. 한 번에 `inbox.yaml`의 `batch_size`건까지 처리한다.
+4. cron이 끝나면 처리한 항목의 제목, 주제, Notion 링크를 Discord로 알린다.
+5. 데스크톱의 Claude Code가 `dev-rules`에서 분석됨 항목을 읽고 PR로 반영한 뒤, 상태를 반영(또는 보류)으로 바꾸고 PR 링크를 적는다. Claude Code는 사용자 계정의 Notion 커넥터로 읽고 쓴다.
+
+**분석 내용** (LLM이 쓴다)
+
+| 항목 | 내용 |
+| --- | --- |
+| 요약 | 글이 말하는 것 |
+| 핵심 내용 | 규칙이나 양식으로 옮길 만한 구체적인 내용 |
+| 반영 제안 | 대상 저장소의 어느 주제에 무엇을 추가하거나 바꾸면 좋은지 |
+| 확인할 점 | 글만으로 판단할 수 없어 사람이 정해야 하는 것 |
+
+**웹 내용을 격리한다**
+
+- Discord 대화에는 planner 도구가 열려 있다. 거기서 웹 글을 읽으면 글에 섞인 지시문이 일정이나 Notion을 건드릴 수 있다. 그래서 대화에서는 큐에 넣기만 하고, 읽기는 inbox 도구만 연 cron이 한다.
+- 가져오기는 Hermes 웹 도구가 아니라 inbox MCP의 코드가 한다. LLM은 큐에 있는 주소의 본문만 받고, 다른 주소를 스스로 열 수 없다.
+- 코드는 http·https만 받고, 사설·루프백·tailnet 주소와 컨테이너 내부 이름은 거부한다. 리다이렉트 뒤 주소도 다시 확인한다. 크기와 시간 제한을 둔다.
+- 가져오지 못하거나 HTML·일반 텍스트가 아니면 코드가 상태를 실패로 바꾸고 이유를 본문에 적은 뒤 다음 항목으로 넘어간다.
+- 주제는 `inbox.yaml`의 목록에 있는 값인지 코드가 확인한다. 없으면 기타로 둔다.
+- Hermes는 제안만 한다. 대상 저장소를 읽거나 고치지 않고, GitHub 자격 증명도 갖지 않는다.
+
+**규칙 파일** (`inbox.yaml`)
+
+```yaml
+notion: { data_source_id: "..." }   # Inbox DB
+targets:
+  dev-rules:
+    description: 새 저장소에 개발 규칙과 문서 양식을 뿌리는 시작 키트
+    topics: [문서 구조, 브랜치·PR, 요구사항, 테스트 전략, 에이전트 지침]
+default_target: dev-rules
+fetch: { timeout: 20s, max_chars: 60000 }
+batch_size: 5
+```
+
+- 대상 저장소의 설명과 주제 목록을 `next_item`이 본문과 함께 반환한다. LLM은 이 목록 안에서 주제를 고른다.
+- 수치는 예시다.
+
 ## 주요 시나리오와 cron
 
 - **할 일 추가**: "DB 프로젝트 ERD 정리, 2시간, 금요일까지" → `add_task` → "이번 주 계획에 넣을까?"
@@ -294,6 +363,7 @@ LLM은 자연어 해석, 소요 시간 추정, 우선순위 판단, 프로젝트
 - **프로젝트 시작**: "DB 프로젝트 시작, 12월 10일까지" → 단계·할 일 초안 → `propose_breakdown` → 초안과 점검 결과 전송 → "OK"면 `apply_breakdown`
 - **프로젝트 점검**: "DB 프로젝트 어때?" → `project_status` → 단계별 남은 시간과 판정
 - **채용 공고**: 새 공고 알림 → "이거 저장" → Notion Jobs + 마감 캘린더
+- **자료 수집**: 링크 전송 → `capture` → "수집함에 넣었어" → 다음 수집 cron이 분석 → 제목·주제·Notion 링크 알림
 
 | 시각 | 작업 | 모델 | 허용 도구 |
 | --- | --- | --- | --- |
@@ -301,6 +371,7 @@ LLM은 자연어 해석, 소요 시간 추정, 우선순위 판단, 프로젝트
 | 매일 08:00 | 오늘 타임라인 요약. 미승인 초안이 있으면 반영 여부를 다시 물음. "프로젝트" 캘린더 동기화 | GPT | planner |
 | 일요일 20:00 | 주간 계획 + 마감 위험 목록 + 프로젝트 점검(부족·빠듯 단계) | GPT 상위 모델 | planner |
 | 매일 09:00, 18:00 | 채용 공고 수집 → 새 공고만 알림 | K-EXAONE | jobs (`collect`, `new_since_last`) |
+| 매일 13:00, 23:00 | 수집함의 대기 항목 분석 → 처리한 항목 알림 | GPT | inbox (`next_item`, `save_analysis`) |
 | 키 만료 5일 전 | EXAONE API 키 교체 알림 + `hermes fallback check --live` | GPT 경량 모델 | 없음 |
 
 - cron은 게이트웨이가 60초마다 확인해 실행하므로 게이트웨이가 항상 떠 있어야 한다.
@@ -330,13 +401,15 @@ assistant/
 ├─ docs/
 ├─ mcp/
 │  ├─ planner/        # uv 프로젝트: server.py, scheduling 모듈, tests/
+│  ├─ inbox/
 │  └─ jobs/
 └─ deploy/
    ├─ compose.yaml    # hermes, camofox
    ├─ Dockerfile      # FROM nousresearch/hermes-agent + mcp/
    ├─ .env.example
    ├─ hermes/configure.sh  # 저장소가 관리하는 Hermes 설정 (hermes config set)
-   └─ planner.yaml.example
+   ├─ planner.yaml.example
+   └─ inbox.yaml.example
 ```
 
 **서버**
@@ -364,12 +437,13 @@ assistant/
    ├─ .env            # Discord, Notion, EXAONE 키
    ├─ auth.json       # openai-codex 토큰
    ├─ planner/        # planner.yaml, google_token.json, plans.sqlite
+   ├─ inbox/          # inbox.yaml
    └─ jobs/           # jobs.sqlite
 ```
 
 | 컨테이너 | 내용 | 설정 |
 | --- | --- | --- |
-| hermes | 게이트웨이, cron, planner·jobs MCP | `build: deploy/Dockerfile`, `restart: unless-stopped`, `~/assistant-data` → `/opt/data`, `TZ`·`HERMES_TIMEZONE=Asia/Seoul`, `mem_limit: 3g` |
+| hermes | 게이트웨이, cron, planner·inbox·jobs MCP | `build: deploy/Dockerfile`, `restart: unless-stopped`, `~/assistant-data` → `/opt/data`, `TZ`·`HERMES_TIMEZONE=Asia/Seoul`, `mem_limit: 3g` |
 | camofox | 안티디텍션 브라우저 (`ghcr.io/jo-inc/camofox-browser`, 버전 고정) | `mem_limit` 설정, 외부 포트 노출 없음 |
 
 **이미지 빌드와 배포**
@@ -388,8 +462,10 @@ assistant/
 **보안**
 
 - Discord 허용 사용자(`DISCORD_ALLOWED_USERS`)는 본인 ID 하나. 봇에는 Message Content Intent와 Server Members Intent만 켜고(공식 문서상 둘 다 필수), Public Bot은 끈다.
-- Discord 플랫폼 도구는 `platform_toolsets.discord`로 planner·jobs MCP, 메모리, 세션 검색만 연다. 터미널, 파일, 코드 실행은 끈다.
+- Discord 플랫폼 도구는 `platform_toolsets.discord`로 planner·jobs MCP, inbox의 `capture`, 메모리, 세션 검색만 연다. 터미널, 파일, 코드 실행, 웹 도구는 끈다.
 - Google OAuth는 `calendar.events`만, Notion 토큰은 네 DB에만 공유.
+- inbox MCP는 별도 integration의 토큰(`NOTION_INBOX_TOKEN`)을 쓰고, 그 integration은 "자료" 페이지에만 연결한다. planner의 `NOTION_TOKEN`은 inbox MCP의 `env`에 넣지 않는다.
+- 서버에는 Claude CLI를 설치하지 않는다. 저장소를 고치는 작업은 데스크톱에서 한다.
 - stdio MCP에는 PATH, HOME 등 일부를 빼고 환경 변수가 전달되지 않으므로 필요한 키만 `env` 블록에 명시한다.
 - 서버 외부 접근은 Tailscale로만 한다.
 - `~/assistant-data/`에는 토큰이 모두 들어 있으므로 백업은 암호화해 서버 밖에 둔다.
@@ -405,6 +481,7 @@ assistant/
 - [ ] **Notion**: Projects·Milestones·Tasks·Jobs DB 생성(2026-11-20 완료), integration 토큰 발급·공유 ([절차](setup/02-notion.md))
 - [ ] **Google**: Cloud 프로젝트, Calendar API, OAuth 클라이언트(데스크톱 앱, 프로덕션 게시), 캘린더 4개 생성, 토큰 발급
 - [ ] **planner MCP v1**: `list/add/update/complete_task`, `get_day`, `find_free_slots`, GitHub Actions CI(pytest), Discord `platform_toolsets` 제한(planner MCP·메모리·세션 검색만)
+- [ ] **inbox MCP**: "자료" 페이지와 Inbox DB 생성, 별도 integration 토큰, `capture`·`next_item`·`save_analysis`, 13:00·23:00 수집 cron, Discord에 `capture` 열기
 - [ ] **planner MCP 프로젝트 v1**: `list/add/update_project`, `add/update_milestone`, `sync_project_calendar`, Task의 단계 연결
 - [ ] **planner MCP v2**: `propose_plan`, `apply_plan`, 22:30·08:00 cron
 - [ ] **planner MCP v3**: `reschedule`, `revert_plan`, 자동 반영, 주간 계획 cron
@@ -422,6 +499,10 @@ assistant/
 | 채용 공고 소스: 대상 사이트와 키워드, 공식 API 제공 여부 | jobs MCP 전 |
 | K-EXAONE 학습 활용 동의 설정 확인 (마이 프로필 > 동의 및 알림 관리 > "(선택) 동의: AI 모델 학습 및 서비스 개선을 위한 이용 기록 분석"이 꺼져 있는지) | 다음 키 교체(2026-12-20) 전 |
 | K-EXAONE 도구 호출 안정성: 실제 테스트 후 cron에 계속 쓸지 | jobs MCP 단계에서 테스트 |
+| MCP 도구를 도구 단위로 열 수 있는지(대화에는 `capture`만, cron에는 `next_item`·`save_analysis`만). 안 되면 inbox MCP를 서버 둘로 나눈다 | inbox MCP 전 (Hermes 문서 확인) |
+| cron 알림이 이후 Discord 대화의 맥락에 들어가는지. 들어가면 알림에 싣는 내용을 건수와 링크로 줄인다 | inbox MCP 전 (Hermes 문서 확인) |
+| 수집 cron 시각과 `batch_size`, 본문 추출 방법, HTML이 아닌 자료(PDF, 영상) 처리 | inbox MCP 단계 |
+| inbox MCP를 planner MCP v1 앞으로 당길지 | Google 단계가 끝날 때 |
 
 ## 결정 기록
 
@@ -449,3 +530,9 @@ assistant/
 | 2026-11-20 | 프로젝트 분해는 `propose_breakdown` → 승인 → `apply_breakdown`으로 한다 | LLM이 추정한 단계와 소요 시간이 들어가므로 계획 초안과 같은 승인 흐름을 따른다 |
 | 2026-11-20 | 마감이 없는 Task는 단계 종료일, 없으면 프로젝트 종료일을 마감으로 쓴다 | 마감이 없으면 배치 순서를 정할 근거가 없다 |
 | 2026-11-20 | 주간 시간 배분, Task 선행 관계, 정체 감지, 프로젝트 기록은 보류한다 | 배치 기준을 바꾸거나 관리 부담이 늘어난다. 1\~2주 써 본 뒤 다시 본다 |
+| 2026-11-20 | 개발 규칙과 문서 양식은 별도 저장소 `dev-rules`에서 관리한다. 이 저장소의 설계·요구사항·결정 기록은 여기 남긴다 | 규칙은 여러 프로젝트에 쓰고, 프로젝트 문서는 코드와 한 PR에서 함께 고친다 |
+| 2026-11-20 | 서버의 Hermes는 `dev-rules`에 반영할 자료를 수집·분석만 하고, 저장소 수정은 데스크톱의 Claude Code가 한다. 서버에는 Claude CLI를 두지 않는다 | 서버에서 셸 권한을 가진 에이전트를 돌리면 토큰 폴더에 닿는다. 반영 여부는 PR 검토에서 정한다 |
+| 2026-11-20 | 수집함은 Notion Inbox DB로 둔다 | 서버에 GitHub 토큰을 두지 않고, 폰에서 보기 좋다 |
+| 2026-11-20 | Inbox는 별도 "자료" 페이지와 별도 integration 토큰으로 분리한다 | 웹 글을 읽는 cron의 MCP가 할 일과 프로젝트 DB에 닿는 토큰을 갖지 않게 한다 |
+| 2026-11-20 | 링크는 대화에서 큐에 넣기만 하고, inbox 도구만 연 cron이 읽고 분석한다 | planner 도구가 열린 대화에서 웹 글을 읽으면 글에 섞인 지시문이 일정을 건드릴 수 있다 |
+| 2026-11-20 | 웹 가져오기는 Hermes 웹 도구가 아니라 inbox MCP 코드가 한다 | LLM이 임의 주소를 열 수 없고, cron에 inbox 도구만 열면 된다 |
