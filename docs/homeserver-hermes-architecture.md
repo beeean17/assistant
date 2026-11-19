@@ -45,15 +45,18 @@ Discord가 유일한 입력 창구다. 시간은 Google Calendar, 할 일은 Not
 
 | 작업 | 모델 | 지정 방법 |
 | --- | --- | --- |
-| Discord 대화, 일정 조정 | GPT (ChatGPT 구독, `openai-codex`) | 메인 모델 |
-| 주간 계획 | GPT 상위 모델 | cron 작업별 `--model` |
-| 컨텍스트 압축 | GPT 경량 모델 (구독 내) | `auxiliary.compression` |
+| Discord 대화, 일정 조정, 매일 cron | GPT 메인: `gpt-6.2-sol` (ChatGPT Plus, `openai-codex`) | `model.default` |
+| 주간 계획 | GPT 상위: `gpt-6.2-astra` | cron 작업별 `--model` |
+| 컨텍스트 압축, 키 만료 알림 | GPT 경량: `gpt-6-luna` | `auxiliary.compression`, cron 작업별 `--model` |
 | 채용 공고 수집·요약 | K-EXAONE 2.5 | cron 작업별 `--model --provider` |
 
 **연결**
 
 - GPT: `hermes auth add openai-codex`로 기기 코드 로그인. `auth.adopt_external_logins: false`로 Codex CLI 토큰을 가져오지 않게 한다.
-- K-EXAONE: `providers.exaone`으로 등록한다. base URL `https://api.exaone.ai/v1`, 모델 ID `k-exaone_v2.5`, 키는 `EXAONE_API_KEY`. 형식은 [hermes-notes.md](hermes-notes.md) 참고.
+- K-EXAONE: jobs 단계에서 `providers.exaone`으로 등록한다. base URL `https://api.exaone.ai/v1`, 모델 ID `k-exaone_v2.5`, 키는 `EXAONE_API_KEY`. 형식은 [hermes-notes.md](hermes-notes.md) 참고.
+- K-EXAONE 공식 예시는 `agent.reasoning_effort`를 전역으로 바꾸지만, 그러면 GPT에도 적용되므로 따르지 않는다. 추론 강도는 jobs 단계에서 cron 작업별로 정한다.
+- `-900k` 모델 변형은 쓰지 않는다. Codex 경로의 272K 창으로 충분하고 한도만 더 쓴다.
+- 위 설정은 `deploy/hermes/configure.sh`가 적용한다(아래 "저장소와 배포").
 - cron 모델 결정 순서: 작업별 지정 → `cron.model` → 메인 모델. 작업별로 고정한 모델은 `fallback_providers`를 쓰지 않는다.
 - 웹 추출은 LLM을 쓰지 않으므로 모델을 따로 지정하지 않는다.
 
@@ -263,7 +266,7 @@ assistant/
    ├─ compose.yaml    # hermes, camofox
    ├─ Dockerfile      # FROM nousresearch/hermes-agent + mcp/
    ├─ .env.example
-   ├─ hermes/config.yaml   # 기준 설정. 서버 ~/assistant-data/로 복사해 쓴다
+   ├─ hermes/configure.sh  # 저장소가 관리하는 Hermes 설정 (hermes config set)
    └─ planner.yaml.example
 ```
 
@@ -310,7 +313,8 @@ assistant/
 - GitHub Actions는 배포에 쓰지 않고 CI(테스트)에만 쓴다. 서버는 Tailscale 안에만 있으므로 GitHub에 tailnet 키나 서버 SSH 키를 맡기지 않는다.
 - 공식 이미지 버전을 올릴 때는 Dockerfile의 태그를 바꿔 커밋하고 같은 명령으로 다시 빌드한다. 문제가 생기면 이전 커밋으로 되돌려 다시 빌드한다.
 - 초기에는 `mcp/`를 컨테이너에 bind mount해 서버에서 바로 고치며 만들고, 안정화되면 bind mount를 빼고 이미지에 포함한다.
-- `config.yaml`은 Hermes가 고쳐 쓸 수 있으므로 저장소의 파일은 기준본으로 두고, 서버 쪽과 달라지면 차이를 확인해 저장소에 반영한다.
+- `config.yaml`은 2,400줄이 넘는 Hermes 소유 파일이고 부팅 때 마이그레이션되므로 저장소에 통째로 두지 않는다. 저장소가 관리하는 키만 `deploy/hermes/configure.sh`에 적고 `hermes config set`으로 적용한다. 배포 스크립트가 매번 실행하며, 값이 바뀐 경우에만 게이트웨이를 재시작한다.
+- 서버에서 `config.yaml`을 손으로 고치지 않는다. 바꿀 값은 `configure.sh`에 넣어 커밋한다.
 
 **보안**
 
@@ -326,14 +330,14 @@ assistant/
 일정 관리를 먼저 완성하고, 채용 공고는 그 다음에 붙인다. 단계마다 브랜치를 따로 만들고, 끝나면 여기 체크한다.
 
 - [x] **기반**: Ubuntu Server, Tailscale, Docker 설치 → Hermes 컨테이너 실행 ([절차](setup/01-base.md)) — 2026-11-19 완료
-- [ ] **모델**: `openai-codex` 로그인, K-EXAONE 키 발급(학습 opt-out 먼저)·`providers.exaone` 등록, `auxiliary.compression` 지정
+- [ ] **모델**: `openai-codex` 로그인, 메인·압축 모델 지정(`deploy/hermes/configure.sh`)
 - [ ] **Discord**: 봇 생성(Message Content Intent), 게이트웨이 연결, 허용 사용자·`platform_toolsets` 제한
 - [ ] **Notion**: Projects·Tasks·Jobs DB 생성, integration 토큰 발급·공유
 - [ ] **Google**: Cloud 프로젝트, Calendar API, OAuth 클라이언트(데스크톱 앱, 프로덕션 게시), 캘린더 4개 생성, 토큰 발급
 - [ ] **planner MCP v1**: `list/add/update/complete_task`, `get_day`, `find_free_slots`, GitHub Actions CI(pytest)
 - [ ] **planner MCP v2**: `propose_plan`, `apply_plan`, 22:30·08:00 cron
 - [ ] **planner MCP v3**: `reschedule`, `revert_plan`, 자동 반영, 주간 계획 cron
-- [ ] **jobs MCP**: 수집·중복 제거·알림, Camofox 컨테이너 추가, 키 만료 알림 cron
+- [ ] **jobs MCP**: K-EXAONE 키 발급(학습 opt-out 먼저)·`providers.exaone` 등록, 수집·중복 제거·알림, Camofox 컨테이너 추가, 키 만료 알림 cron
 - [ ] **고정**: bind mount 제거, Dockerfile로 `mcp/` 포함한 이미지 빌드, 1\~2주 사용 후 `planner.yaml`·자동 반영 기준 조정
 
 ## 미결정 사항
@@ -343,7 +347,6 @@ assistant/
 | `planner.yaml` 실제 값: 수면·식사·집중 시간대, 루틴 목록 | planner MCP v2 전 (초기값), 2주 사용 후 조정 |
 | 채용 공고 소스: 대상 사이트와 키워드, 공식 API 제공 여부 | jobs MCP 전 |
 | K-EXAONE 도구 호출 안정성: 실제 테스트 후 cron에 계속 쓸지 | jobs MCP 단계에서 테스트 |
-| 컨텍스트 압축에 쓸 GPT 경량 모델 ID | 모델 단계 (`openai-codex` 모델 목록 확인 후) |
 
 ## 결정 기록
 
@@ -358,3 +361,6 @@ assistant/
 | 2026-11-19 | 이미지는 홈서버(x86_64)에서 직접 빌드하고, 레지스트리(GHCR)는 쓰지 않는다 | 서버 하나뿐이고 빌드·실행 아키텍처가 같다 |
 | 2026-11-19 | 배포는 데스크톱에서 `deploy/deploy.sh`로 수동 실행하고, GitHub Actions는 CI에만 쓴다 | 서버가 Tailscale 안에만 있다. 자동 배포를 하려면 tailnet·SSH 키를 GitHub에 맡기거나 서버에 runner를 둬야 하는데, 배포가 그만큼 잦지 않다 |
 | 2026-11-19 | 상태 디렉터리 `~/assistant-data`를 저장소 밖에 둔다 | 저장소 작업이 토큰을 지우지 않게 한다 |
+| 2026-11-19 | GPT 모델: 메인 `gpt-6.2-sol`, 주간 계획 `gpt-6.2-astra`, 압축·알림 `gpt-6-luna` | Plus 구독 한도를 Codex와 나눠 쓴다. 도구 호출이 많은 planner 흐름은 Sol, 주 1회 계획만 Astra |
+| 2026-11-19 | K-EXAONE 키 발급과 provider 등록을 모델 단계에서 jobs 단계로 옮긴다 | K-EXAONE은 채용 공고에만 쓰므로 그전까지 필요 없고, 키가 30일마다 만료된다 |
+| 2026-11-19 | Hermes 설정은 `config.yaml` 대신 `deploy/hermes/configure.sh`로 관리한다 | `config.yaml`은 Hermes가 생성·마이그레이션하는 큰 파일이라 저장소 기준본과 쉽게 어긋난다 |

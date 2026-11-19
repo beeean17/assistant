@@ -42,6 +42,7 @@ fi
 git pull -q --ff-only
 echo "server at $(git log -1 --oneline)"
 docker compose -f deploy/compose.yaml up -d --build
+deploy/hermes/configure.sh
 docker compose -f deploy/compose.yaml ps
 REMOTE
 
