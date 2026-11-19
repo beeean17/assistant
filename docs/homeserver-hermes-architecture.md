@@ -131,7 +131,9 @@ Notion은 프로젝트와 할 일의 원본이다. 반복은 Notion에 만들지
 - 프로젝트 막대(`kind: project`)에는 `task_id`, `plan_id` 대신 `project_id`를 넣고, 단계 막대면 `milestone_id`도 넣는다.
 - "프로젝트" 캘린더는 Notion Projects·Milestones의 사본이다. 막대를 Calendar에서 직접 옮겨도 다음 동기화 때 Notion 값으로 돌아간다.
 - 양방향 자동 동기화는 만들지 않는다. 완료는 Discord에서 말하면 에이전트가 Notion 상태를 바꾼다.
-- Notion integration 토큰은 이 네 DB에만 공유한다.
+- Notion integration 토큰은 이 네 DB에만 공유한다. DB는 "비서" 페이지 아래에 있고, integration은 그 페이지에만 연결한다. 데이터 소스 ID와 Status 그룹은 [setup/02-notion.md](setup/02-notion.md)에 있다.
+- 양방향 관계라서 Projects에 `단계`·`할 일`, Milestones에 `할 일` 역방향 속성이 있다. Notion이 관리하므로 코드는 쓰지 않는다.
+- 코드는 Status를 옵션 이름이 아니라 그룹(to_do / in_progress / complete)으로 판단한다.
 
 ## Google Calendar 구성
 
@@ -398,10 +400,11 @@ assistant/
 
 - [x] **기반**: Ubuntu Server, Tailscale, Docker 설치 → Hermes 컨테이너 실행 ([절차](setup/01-base.md)) — 2026-11-19 완료
 - [x] **모델**: `openai-codex` 로그인, 메인·압축 모델 지정, K-EXAONE fallback 등록(`deploy/hermes/configure.sh`) — 2026-11-20 완료
-- [ ] **Discord**: 봇 생성(Message Content·Server Members Intent), 게이트웨이 연결, 허용 사용자·`platform_toolsets` 제한, EXAONE 키 만료 알림 cron
-- [ ] **Notion**: Projects·Milestones·Tasks·Jobs DB 생성, integration 토큰 발급·공유
+- [x] **Discord**: 봇 생성(Message Content·Server Members Intent), 게이트웨이 연결, 허용 사용자 — 2026-11-20 완료 (설정은 사용자가 직접)
+- [ ] **운영 cron**: EXAONE 키 만료 알림 + `hermes fallback check --live` (2026-12-15 전)
+- [ ] **Notion**: Projects·Milestones·Tasks·Jobs DB 생성(2026-11-20 완료), integration 토큰 발급·공유 ([절차](setup/02-notion.md))
 - [ ] **Google**: Cloud 프로젝트, Calendar API, OAuth 클라이언트(데스크톱 앱, 프로덕션 게시), 캘린더 4개 생성, 토큰 발급
-- [ ] **planner MCP v1**: `list/add/update/complete_task`, `get_day`, `find_free_slots`, GitHub Actions CI(pytest)
+- [ ] **planner MCP v1**: `list/add/update/complete_task`, `get_day`, `find_free_slots`, GitHub Actions CI(pytest), Discord `platform_toolsets` 제한(planner MCP·메모리·세션 검색만)
 - [ ] **planner MCP 프로젝트 v1**: `list/add/update_project`, `add/update_milestone`, `sync_project_calendar`, Task의 단계 연결
 - [ ] **planner MCP v2**: `propose_plan`, `apply_plan`, 22:30·08:00 cron
 - [ ] **planner MCP v3**: `reschedule`, `revert_plan`, 자동 반영, 주간 계획 cron
@@ -435,6 +438,8 @@ assistant/
 | 2026-11-19 | 상태 디렉터리 `~/assistant-data`를 저장소 밖에 둔다 | 저장소 작업이 토큰을 지우지 않게 한다 |
 | 2026-11-19 | GPT 모델: 메인 `gpt-6.2-sol`, 주간 계획 `gpt-6.2-astra`, 압축·알림 `gpt-6-luna` | Plus 구독 한도를 Codex와 나눠 쓴다. 도구 호출이 많은 planner 흐름은 Sol, 주 1회 계획만 Astra |
 | 2026-11-19 | K-EXAONE 키 발급과 provider 등록을 모델 단계에서 jobs 단계로 옮긴다 | K-EXAONE은 채용 공고에만 쓰므로 그전까지 필요 없고, 키가 30일마다 만료된다 (2026-11-20 결정으로 대체) |
+| 2026-11-20 | Discord 설정은 사용자가 직접 했다. `platform_toolsets` 제한은 planner MCP v1로, 키 만료 알림 cron은 별도 "운영 cron" 항목으로 옮긴다 | 도구 제한은 MCP를 붙일 때 함께 정하는 게 자연스럽고, 키 만료(2026-12-20)는 planner 일정보다 먼저 온다 |
+| 2026-11-20 | Notion DB는 Claude가 Notion 커넥터로 "비서" 페이지 아래에 만든다 | 속성 이름·옵션·관계를 문서와 정확히 맞춘다 |
 | 2026-11-20 | K-EXAONE을 GPT의 fallback으로 등록한다. 학습 동의 설정은 확인하지 못한 채 진행한다 | Codex 토큰 격리나 Plus 한도 소진 때 비서가 멈추지 않게 한다. 동의 설정 확인은 미결정 사항에 남긴다 |
 | 2026-11-19 | Hermes 설정은 `config.yaml` 대신 `deploy/hermes/configure.sh`로 관리한다 | `config.yaml`은 Hermes가 생성·마이그레이션하는 큰 파일이라 저장소 기준본과 쉽게 어긋난다 |
 | 2026-11-20 | 프로젝트 관리는 Slack이 아니라 Notion에 둔다 | DB 간 Relation과 날짜 범위가 필요하고, 혼자 쓰는 용도라 메신저의 이점이 없다 |
