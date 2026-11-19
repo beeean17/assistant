@@ -306,6 +306,8 @@ assistant/
 - Hermes 버전은 Dockerfile 한 곳에만 적는다. 버전을 올리는 것도 커밋이다.
 - 서버 설치와 실행 절차는 [setup/01-base.md](setup/01-base.md)에 있다.
 - 빌드와 배포는 모두 서버에서 한다: `cd ~/assistant && git pull && docker compose -f deploy/compose.yaml up -d --build`.
+- 평소에는 데스크톱에서 `deploy/deploy.sh`로 배포한다. Tailscale SSH로 서버에 접속해 위 명령을 실행하므로 GitHub에 push한 `main`만 배포된다.
+- GitHub Actions는 배포에 쓰지 않고 CI(테스트)에만 쓴다. 서버는 Tailscale 안에만 있으므로 GitHub에 tailnet 키나 서버 SSH 키를 맡기지 않는다.
 - 공식 이미지 버전을 올릴 때는 Dockerfile의 태그를 바꿔 커밋하고 같은 명령으로 다시 빌드한다. 문제가 생기면 이전 커밋으로 되돌려 다시 빌드한다.
 - 초기에는 `mcp/`를 컨테이너에 bind mount해 서버에서 바로 고치며 만들고, 안정화되면 bind mount를 빼고 이미지에 포함한다.
 - `config.yaml`은 Hermes가 고쳐 쓸 수 있으므로 저장소의 파일은 기준본으로 두고, 서버 쪽과 달라지면 차이를 확인해 저장소에 반영한다.
@@ -328,7 +330,7 @@ assistant/
 - [ ] **Discord**: 봇 생성(Message Content Intent), 게이트웨이 연결, 허용 사용자·`platform_toolsets` 제한
 - [ ] **Notion**: Projects·Tasks·Jobs DB 생성, integration 토큰 발급·공유
 - [ ] **Google**: Cloud 프로젝트, Calendar API, OAuth 클라이언트(데스크톱 앱, 프로덕션 게시), 캘린더 4개 생성, 토큰 발급
-- [ ] **planner MCP v1**: `list/add/update/complete_task`, `get_day`, `find_free_slots`
+- [ ] **planner MCP v1**: `list/add/update/complete_task`, `get_day`, `find_free_slots`, GitHub Actions CI(pytest)
 - [ ] **planner MCP v2**: `propose_plan`, `apply_plan`, 22:30·08:00 cron
 - [ ] **planner MCP v3**: `reschedule`, `revert_plan`, 자동 반영, 주간 계획 cron
 - [ ] **jobs MCP**: 수집·중복 제거·알림, Camofox 컨테이너 추가, 키 만료 알림 cron
@@ -353,5 +355,6 @@ assistant/
 | 2026-11-19 | K-EXAONE은 채용 공고에만 쓰고, 압축은 GPT로 옮긴다 | 입출력이 학습에 쓰이는 약관이라 개인 데이터를 보내지 않는다 |
 | 2026-11-19 | 문서·MCP·배포를 이 저장소 하나에 둔다 (`homeserver-mcp` 분리 안 함) | 문서와 코드가 함께 바뀐다 |
 | 2026-11-19 | Hermes 상태는 `/opt/data` 단일 마운트, `auxiliary.web_extract` 삭제 | 공식 이미지 구조와 설정 키 확인 결과 |
-| 2026-11-19 | 이미지는 홈서버(x86_64)에서 직접 빌드하고, GHCR·GitHub Actions는 쓰지 않는다 | 서버 하나뿐이고 빌드·실행 아키텍처가 같다 |
+| 2026-11-19 | 이미지는 홈서버(x86_64)에서 직접 빌드하고, 레지스트리(GHCR)는 쓰지 않는다 | 서버 하나뿐이고 빌드·실행 아키텍처가 같다 |
+| 2026-11-19 | 배포는 데스크톱에서 `deploy/deploy.sh`로 수동 실행하고, GitHub Actions는 CI에만 쓴다 | 서버가 Tailscale 안에만 있다. 자동 배포를 하려면 tailnet·SSH 키를 GitHub에 맡기거나 서버에 runner를 둬야 하는데, 배포가 그만큼 잦지 않다 |
 | 2026-11-19 | 상태 디렉터리 `~/assistant-data`를 저장소 밖에 둔다 | 저장소 작업이 토큰을 지우지 않게 한다 |

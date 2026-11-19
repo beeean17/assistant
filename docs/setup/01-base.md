@@ -39,7 +39,13 @@
    ```
 
 2. Tailscale 관리 콘솔(Machines)에서 이 서버의 **Disable key expiry**를 켠다. 끄지 않으면 기기 키가 만료될 때 서버가 tailnet에서 빠진다.
-3. 다른 기기에서 `ssh <사용자>@<서버의 Tailscale 이름 또는 IP>`로 접속되는지 확인한다.
+3. 데스크톱의 `~/.ssh/config`에 서버를 `homeserver`로 등록하고 `ssh homeserver`로 접속되는지 확인한다. 배포 스크립트(`deploy/deploy.sh`)가 이 이름을 쓴다. 다른 이름을 쓰려면 `ASSISTANT_HOST`로 지정한다.
+
+   ```
+   Host homeserver
+     HostName <서버의 Tailscale 이름 또는 IP>
+     User <서버 사용자>
+   ```
 4. 접속이 확인된 뒤에만 방화벽을 켠다. 실수로 막히면 서버 앞에서 직접 로그인해 `sudo ufw disable`로 푼다.
 
    ```sh
@@ -141,7 +147,8 @@ docker stats --no-stream hermes
 
 | 목적 | 명령 |
 | --- | --- |
-| 배포 (코드·설정 변경 반영) | `cd ~/assistant && git pull && dc up -d --build` |
+| 배포 (데스크톱에서) | `deploy/deploy.sh` (로그까지 보려면 `--logs`) |
+| 배포 (서버에서) | `cd ~/assistant && git pull && dc up -d --build` |
 | 로그 보기 | `dc logs -f` 또는 `tail -F ~/assistant-data/logs/gateways/default/current` |
 | 재시작 | `dc restart` |
 | 컨테이너 안 Hermes 명령 | `dc exec hermes hermes <명령>` |
