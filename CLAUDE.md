@@ -39,4 +39,7 @@
 
 ## 명령
 
-코드가 생기면 여기에 테스트·실행·빌드 명령을 적는다.
+- 로컬 확인(데스크톱도 x86_64): 저장소 밖 임시 디렉터리를 `DATA_DIR`로 둔 env 파일을 만들고
+  `docker compose -f deploy/compose.yaml --env-file <임시.env> up -d --build`. 확인이 끝나면 `down`하고 임시 데이터를 지운다.
+- 서버 배포: `cd ~/assistant && git pull && docker compose -f deploy/compose.yaml up -d --build` (절차는 `docs/setup/01-base.md`).
+- 컨테이너 안 Hermes 명령: `docker compose -f deploy/compose.yaml exec hermes hermes <명령>`.

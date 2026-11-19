@@ -297,12 +297,14 @@ assistant/
 
 | 컨테이너 | 내용 | 설정 |
 | --- | --- | --- |
-| hermes | 게이트웨이, cron, planner·jobs MCP | `build: deploy/Dockerfile`, `restart: unless-stopped`, `~/assistant-data` → `/opt/data`, `TZ=Asia/Seoul` |
+| hermes | 게이트웨이, cron, planner·jobs MCP | `build: deploy/Dockerfile`, `restart: unless-stopped`, `~/assistant-data` → `/opt/data`, `TZ`·`HERMES_TIMEZONE=Asia/Seoul`, `mem_limit: 3g` |
 | camofox | 안티디텍션 브라우저 (`ghcr.io/jo-inc/camofox-browser`, 버전 고정) | `mem_limit` 설정, 외부 포트 노출 없음 |
 
 **이미지 빌드와 배포**
 
-- `deploy/Dockerfile`은 공식 이미지(`nousresearch/hermes-agent`, 버전 태그 고정) 위에 `mcp/`와 의존성을 얹는다. 공식 이미지에 `uv`가 PATH에 없으면 여기서 설치한다.
+- `deploy/Dockerfile`은 공식 이미지(`nousresearch/hermes-agent`, 버전 태그 고정) 위에 `mcp/`와 의존성을 얹는다. 공식 이미지의 `uv`는 PATH에 없으므로 `ghcr.io/astral-sh/uv`에서 같은 버전을 복사해 `/usr/local/bin`에 둔다.
+- Hermes 버전은 Dockerfile 한 곳에만 적는다. 버전을 올리는 것도 커밋이다.
+- 서버 설치와 실행 절차는 [setup/01-base.md](setup/01-base.md)에 있다.
 - 빌드와 배포는 모두 서버에서 한다: `cd ~/assistant && git pull && docker compose -f deploy/compose.yaml up -d --build`.
 - 공식 이미지 버전을 올릴 때는 Dockerfile의 태그를 바꿔 커밋하고 같은 명령으로 다시 빌드한다. 문제가 생기면 이전 커밋으로 되돌려 다시 빌드한다.
 - 초기에는 `mcp/`를 컨테이너에 bind mount해 서버에서 바로 고치며 만들고, 안정화되면 bind mount를 빼고 이미지에 포함한다.
@@ -321,7 +323,7 @@ assistant/
 
 일정 관리를 먼저 완성하고, 채용 공고는 그 다음에 붙인다. 단계마다 브랜치를 따로 만들고, 끝나면 여기 체크한다.
 
-- [ ] **기반**: Ubuntu Server, Tailscale, Docker 설치 → Hermes 컨테이너 실행. 이미지 안 `uv` 유무, `TZ` 반영 확인
+- [ ] **기반**: Ubuntu Server, Tailscale, Docker 설치 → Hermes 컨테이너 실행 ([절차](setup/01-base.md))
 - [ ] **모델**: `openai-codex` 로그인, K-EXAONE 키 발급(학습 opt-out 먼저)·`providers.exaone` 등록, `auxiliary.compression` 지정
 - [ ] **Discord**: 봇 생성(Message Content Intent), 게이트웨이 연결, 허용 사용자·`platform_toolsets` 제한
 - [ ] **Notion**: Projects·Tasks·Jobs DB 생성, integration 토큰 발급·공유

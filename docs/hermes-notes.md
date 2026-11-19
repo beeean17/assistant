@@ -11,7 +11,12 @@
 | 주제 | 내용 | 출처 |
 | --- | --- | --- |
 | Docker 이미지 | `nousresearch/hermes-agent` (`latest`/`stable`, `main`, `X.Y.Z`). 모든 상태가 `/opt/data` 하나에 있다(config.yaml, .env, auth.json, sessions, memories). 부팅 시 config.yaml을 마이그레이션하며 고쳐 쓸 수 있다 | /user-guide/docker, 저장소 `Dockerfile` |
-| `uv` | Dockerfile이 `/opt/hermes/tools`에 고정 버전 uv를 두지만 `/usr/local/bin`에는 링크하지 않는다. PATH에 있는지는 미확인 | 저장소 `Dockerfile` |
+| `uv` | `v0.23.2` 이미지에서 `/opt/hermes/tools/uv-0.13.5-linux-x64/uv`에 있고 PATH에는 없다. `deploy/Dockerfile`이 `ghcr.io/astral-sh/uv:0.13.5`에서 복사해 해결 | 로컬 빌드 확인 (2026-11-19) |
+| 이미지 실측 (`v0.23.2`) | 크기 약 4.7GB(Chromium 포함), 대기 메모리 약 320MB. 공식 권장은 메모리 1GB 이상, 브라우저 도구 사용 시 2GB 이상 | 로컬 실행 확인, /user-guide/docker |
+| 실행 사용자 | 기본 UID 10000(`hermes`). `HERMES_UID`/`HERMES_GID`(별칭 `PUID`/`PGID`)로 호스트 사용자와 맞추면 `/opt/data` 파일이 호스트 사용자 소유가 된다. `docker exec hermes hermes ...`는 자동으로 `hermes` 사용자로 내려간다 | /user-guide/docker, 로컬 확인 |
+| 프로세스 관리 | `gateway run`은 s6-overlay가 감독한다(죽으면 재시작, 컨테이너 재시작 시 이전 상태 복구). ENTRYPOINT(`/init`)를 바꾸지 않는다. 바꾸면 MCP 같은 자식 프로세스 좀비를 거두지 못한다 | /user-guide/docker |
+| 로그 | `docker logs`와 `/opt/data/logs/gateways/default/current`(10MB 순환) 양쪽에 남는다 | /user-guide/docker |
+| 시간대 | `config.yaml`의 `timezone:` 또는 `HERMES_TIMEZONE`이 에이전트 시계와 cron 일정을 정한다. 로그 시각은 컨테이너 `TZ`를 따른다. cron 작업별 `--timezone`도 있다 | /user-guide/configuration, /user-guide/features/cron |
 | ChatGPT 구독 | `hermes auth add openai-codex`. 기본은 기기 코드, `--browser`는 PKCE. 토큰은 `auth.json`. 갱신이 실패하면 토큰을 격리하고, 다시 로그인해야 풀린다 | /integrations/providers, /user-guide/security |
 | 외부 로그인 | `auth.adopt_external_logins: false`로 Codex CLI 토큰을 가져오지 않는다 | /user-guide/security |
 | 커스텀 제공자 | `providers.<name>: {api, key_env, transport: chat_completions, default_model, extra_body}`. `custom_providers:` 목록은 구 형식 | /integrations/providers |
@@ -30,9 +35,8 @@
 
 ## 구현할 때 확인할 것
 
-- [ ] 공식 이미지에서 `uv`가 PATH에 있는지: `docker run --rm nousresearch/hermes-agent which uv`
 - [ ] `mcp_servers.*.env`에서 `${VAR}` 치환이 되는지, 아니면 값을 직접 적어야 하는지
-- [ ] Hermes cron이 컨테이너 `TZ`를 따르는지, 별도 timezone 설정이 있는지
+- [ ] `HERMES_TIMEZONE=Asia/Seoul`이 cron 일정에 실제로 적용되는지 (첫 cron을 만들 때 다음 실행 시각으로 확인)
 - [ ] `openai-codex`에서 쓸 수 있는 모델 ID (메인, 상위, 경량)
 - [ ] K-EXAONE 도구 호출(`tools` 인자) 지원 여부와 안정성
 - [ ] 키 만료 알림 같은 일회성·간격 cron을 어떤 형식으로 만드는지
