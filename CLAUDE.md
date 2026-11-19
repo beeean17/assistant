@@ -44,3 +44,4 @@
 - 서버 배포: 데스크톱에서 `deploy/deploy.sh` (SSH 호스트 `server`, `ASSISTANT_HOST`로 변경). push된 `origin/main`만 배포된다. 서버 설치 절차는 `docs/setup/01-base.md`.
 - GitHub Actions는 CI(테스트)에만 쓴다. 서버에 접근하는 워크플로는 만들지 않는다.
 - 컨테이너 안 Hermes 명령: `docker compose -f deploy/compose.yaml exec hermes hermes <명령>`.
+- Hermes 설정 변경: `deploy/hermes/configure.sh`의 `SETTINGS`에 키를 추가·수정하고 커밋한다. 배포 때 자동 적용된다. 서버 `config.yaml`을 직접 고치지 않는다.

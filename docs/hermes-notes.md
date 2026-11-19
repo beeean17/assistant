@@ -31,13 +31,18 @@
 | `delegate_task` | 호출마다 모델을 지정하는 인자가 없다(의도된 동작, #17685). 전역 `delegation.model`은 동작한다 | GitHub 이슈 #17685, #146382 |
 | K-EXAONE API | 2026-11-09부터 당분간 무료. `https://api.exaone.ai/v1` OpenAI 호환, 모델 `k-exaone_v2.5`, 텍스트 전용, 컨텍스트 524,288. 공식 Hermes 설정 예시는 `providers.exaone`, `key_env: EXAONE_API_KEY` | docs.exaone.ai/ko/docs/agent-start |
 | K-EXAONE 약관 | 비상업 용도만 허용. 입출력이 기본으로 학습에 쓰이고 opt-out은 소급되지 않는다. API 키는 30일마다 만료된다. 데이터 사용에 동의하면 일일 한도가 오른다. 수치 한도는 공개되지 않았다(초과 시 429, 응답 헤더에 한도 표시) | docs.exaone.ai |
+| Codex 모델 목록 (Plus, 2026-11-19) | `gpt-6.2-sol`, `gpt-6.2-astra`, `gpt-6.1-terra`, `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol/terra/luna`, 각 `-900k` 변형. 등급은 Astra(최상위) > Sol(코딩·에이전트) > Terra(균형) > Luna(빠름·대량). Codex 경로 창은 대부분 272K. `hermes model` 선택 화면과 같은 함수(`hermes_cli.codex_models.get_codex_model_ids`)로 확인 | 서버 컨테이너, /integrations/providers |
+| 구독 한도 | `hermes usage --provider openai-codex`로 5시간·주간 남은 한도를 본다 | /reference/cli-commands |
+| `hermes config set` | 키를 검증하고 저장한다. 모르는 키는 경고만 내고 저장한다(`--force`로 경고 생략). 같은 값을 다시 넣으면 파일이 바뀌지 않는다. `model.provider`를 바꾸면 이전 provider의 `model.base_url`을 지운다 | 로컬 확인 (2026-11-19) |
+| 압축 provider | `auxiliary.compression.provider: openai-codex` (`codex`도 같은 값으로 정규화). Codex는 기본 모델이 없으므로 `auxiliary.compression.model`을 꼭 적는다 | 이미지 내 `agent/auxiliary_client.py` |
+| 설정 반영 | `compression.*`, `model.context_length`, Discord 허용 목록은 다음 메시지부터 반영된다. 그 밖의 키는 게이트웨이 재시작이 안전하다(`hermes gateway restart`, 컨테이너 안에서는 s6가 처리) | /user-guide/configuration |
+| K-EXAONE 공식 Hermes 예시 | `providers.exaone: {api: https://api.exaone.ai/v1, key_env: EXAONE_API_KEY, transport: chat_completions, default_model: k-exaone_v2.5, extra_body: {temperature: 1.0, top_p: 0.95}}`와 전역 `agent.reasoning_effort: medium`. 세션에서는 `/model custom:exaone:k-exaone_v2.5`. 도구 호출 지원 선언은 Hermes 예시에 없다 | docs.exaone.ai/ko/docs/agent-start |
 | K-EXAONE `reasoning_effort` | `low`, `high`, `max`만 받고 기본값은 `max`. 공식 Hermes 예시는 `medium`을 쓰므로 실제 동작을 확인해야 한다 | docs.exaone.ai 모델 레퍼런스 |
 
 ## 구현할 때 확인할 것
 
 - [ ] `mcp_servers.*.env`에서 `${VAR}` 치환이 되는지, 아니면 값을 직접 적어야 하는지
 - [ ] `HERMES_TIMEZONE=Asia/Seoul`이 cron 일정에 실제로 적용되는지 (첫 cron을 만들 때 다음 실행 시각으로 확인)
-- [ ] `openai-codex`에서 쓸 수 있는 모델 ID (메인, 상위, 경량)
 - [ ] K-EXAONE 도구 호출(`tools` 인자) 지원 여부와 안정성
 - [ ] 키 만료 알림 같은 일회성·간격 cron을 어떤 형식으로 만드는지
 - [ ] Google OAuth "프로덕션" 게시 상태에서 refresh token이 만료되지 않는지 (Google 공식 문서)
