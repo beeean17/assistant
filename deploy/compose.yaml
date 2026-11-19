@@ -1,0 +1,24 @@
+name: assistant
+
+services:
+  hermes:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile   # HERMES_VERSION / UV_VERSION are pinned there
+    image: assistant-hermes:local
+    container_name: hermes
+    command: gateway run
+    restart: unless-stopped
+    volumes:
+      - ${DATA_DIR:?DATA_DIR must be set in deploy/.env}:/opt/data
+    environment:
+      TZ: Asia/Seoul                 # log timestamps, child processes
+      HERMES_TIMEZONE: Asia/Seoul    # agent clock and cron schedules
+      HERMES_UID: ${HOST_UID:-1000}  # keep DATA_DIR owned by the host user
+      HERMES_GID: ${HOST_GID:-1000}
+    mem_limit: 3g
+    logging:                         # Hermes rotates its own logs under DATA_DIR/logs;
+      driver: json-file              # cap the docker copy too
+      options: { max-size: 10m, max-file: "3" }
+    # No published ports: Discord is an outbound connection, and the
+    # dashboard / API server stay disabled.
