@@ -22,7 +22,7 @@
 - 시간 계산, 빈 시간 계산, 블록 배치, 중복 판단은 코드로 한다. LLM에게 넘기는 도구 설명에 계산을 맡기는 표현을 쓰지 않는다.
 - Calendar·Notion 쓰기는 `propose_plan` → 승인 → `apply_plan` 흐름을 지킨다. 자동 반영 여부는 코드가 판단해 반환한다(설계 문서의 "자동 반영 기준").
 - 에이전트가 만든 Calendar 이벤트에는 `extendedProperties.private`에 `task_id`, `plan_id`, `kind`를 넣는다.
-- Calendar·Notion 자격 증명은 planner MCP만 가진다. 개인 데이터를 K-EXAONE으로 보내는 경로를 만들지 않는다.
+- Calendar·Notion 자격 증명은 planner MCP만 가진다. K-EXAONE은 채용 공고 cron과 GPT fallback에만 쓴다. 그 밖에 개인 데이터를 K-EXAONE으로 보내는 경로(작업별 provider 지정 등)를 만들지 않는다.
 
 ## 코드 규칙
 
