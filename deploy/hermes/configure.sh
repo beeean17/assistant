@@ -19,6 +19,8 @@ model.default	gpt-6.2-sol
 auxiliary.compression.provider	openai-codex
 auxiliary.compression.model	gpt-6-luna
 auth.adopt_external_logins	false
+providers.exaone	{api: "https://api.exaone.ai/v1", key_env: EXAONE_API_KEY, transport: chat_completions, default_model: k-exaone_v2.5, extra_body: {temperature: 1.0, top_p: 0.95}}
+fallback_providers	[{provider: exaone, model: k-exaone_v2.5}]
 EOF
 )
 

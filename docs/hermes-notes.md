@@ -37,6 +37,9 @@
 | 압축 provider | `auxiliary.compression.provider: openai-codex` (`codex`도 같은 값으로 정규화). Codex는 기본 모델이 없으므로 `auxiliary.compression.model`을 꼭 적는다 | 이미지 내 `agent/auxiliary_client.py` |
 | 설정 반영 | `compression.*`, `model.context_length`, Discord 허용 목록은 다음 메시지부터 반영된다. 그 밖의 키는 게이트웨이 재시작이 안전하다(`hermes gateway restart`, 컨테이너 안에서는 s6가 처리) | /user-guide/configuration |
 | K-EXAONE 공식 Hermes 예시 | `providers.exaone: {api: https://api.exaone.ai/v1, key_env: EXAONE_API_KEY, transport: chat_completions, default_model: k-exaone_v2.5, extra_body: {temperature: 1.0, top_p: 0.95}}`와 전역 `agent.reasoning_effort: medium`. 세션에서는 `/model custom:exaone:k-exaone_v2.5`. 도구 호출 지원 선언은 Hermes 예시에 없다 | docs.exaone.ai/ko/docs/agent-start |
+| fallback | 최상위 `fallback_providers: [{provider, model}]`. `providers:`에 등록한 이름을 그대로 쓴다(`provider: exaone`). 429·5xx(재시도 후), 401·403·404(즉시)에서 전환하고, 턴 단위로 다음 메시지에서 주 모델을 다시 시도한다. 리셋 시각이 알려진 한도 초과는 리셋까지 유지한다. 모델을 지정한 cron은 fallback을 타지 않는다. 환경 변수로는 설정할 수 없다. `hermes fallback check [--live]`로 점검(실패 시 종료 코드 1) | /integrations/providers#fallback-providers |
+| K-EXAONE 학습 활용 동의 | Rate Limits 문서: 마이 프로필 > 동의 및 알림 관리 > "(선택) 동의: AI 모델 학습 및 서비스 개선을 위한 이용 기록 분석". 동의하면 일일 한도가 늘어나고, 동의하지 않아도 API는 쓸 수 있다. 위 약관 요약("기본으로 학습에 쓰임")과 설명이 다르다. 한도는 `x-{second,minute,day}-rate-limit[-remaining]` 응답 헤더로 확인 | docs.exaone.ai/ko/docs/rate-limits |
+| K-EXAONE 키 점검 | `GET https://api.exaone.ai/v1/models`(Bearer 키)가 200과 `k-exaone_v2.5`를 돌려주면 키가 유효하다. 개인 데이터를 보내지 않는다 | 서버 확인 (2026-11-20) |
 | K-EXAONE `reasoning_effort` | `low`, `high`, `max`만 받고 기본값은 `max`. 공식 Hermes 예시는 `medium`을 쓰므로 실제 동작을 확인해야 한다 | docs.exaone.ai 모델 레퍼런스 |
 
 ## 구현할 때 확인할 것
