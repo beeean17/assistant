@@ -17,7 +17,7 @@
 | 프로세스 관리 | `gateway run`은 s6-overlay가 감독한다(죽으면 재시작, 컨테이너 재시작 시 이전 상태 복구). ENTRYPOINT(`/init`)를 바꾸지 않는다. 바꾸면 MCP 같은 자식 프로세스 좀비를 거두지 못한다 | /user-guide/docker |
 | 로그 | `docker logs`와 `/opt/data/logs/gateways/default/current`(10MB 순환) 양쪽에 남는다 | /user-guide/docker |
 | 시간대 | `config.yaml`의 `timezone:` 또는 `HERMES_TIMEZONE`이 에이전트 시계와 cron 일정을 정한다. 로그 시각은 컨테이너 `TZ`를 따른다. cron 작업별 `--timezone`도 있다 | /user-guide/configuration, /user-guide/features/cron |
-| ChatGPT 구독 | `hermes auth add openai-codex`. 기본은 기기 코드, `--browser`는 PKCE. 토큰은 `auth.json`. 갱신이 실패하면 토큰을 격리하고, 다시 로그인해야 풀린다 | /integrations/providers, /user-guide/security |
+| ChatGPT 구독 | `hermes auth add openai-codex` (`v0.23.2`의 `hermes status`는 `--type oauth`를 붙인 형태를 안내한다). 기본은 기기 코드, `--browser`는 PKCE. 토큰은 `auth.json`. 갱신이 실패하면 토큰을 격리하고, 다시 로그인해야 풀린다 | /integrations/providers, /user-guide/security |
 | 외부 로그인 | `auth.adopt_external_logins: false`로 Codex CLI 토큰을 가져오지 않는다 | /user-guide/security |
 | 커스텀 제공자 | `providers.<name>: {api, key_env, transport: chat_completions, default_model, extra_body}`. `custom_providers:` 목록은 구 형식 | /integrations/providers |
 | MCP | `mcp_servers.<name>: {command, args, env}`. 환경 변수는 PATH, HOME, USER, LANG, LC_ALL, TERM, SHELL, TMPDIR, XDG_*만 전달된다 | /user-guide/features/mcp |

@@ -325,7 +325,7 @@ assistant/
 
 일정 관리를 먼저 완성하고, 채용 공고는 그 다음에 붙인다. 단계마다 브랜치를 따로 만들고, 끝나면 여기 체크한다.
 
-- [ ] **기반**: Ubuntu Server, Tailscale, Docker 설치 → Hermes 컨테이너 실행 ([절차](setup/01-base.md))
+- [x] **기반**: Ubuntu Server, Tailscale, Docker 설치 → Hermes 컨테이너 실행 ([절차](setup/01-base.md)) — 2026-11-19 완료
 - [ ] **모델**: `openai-codex` 로그인, K-EXAONE 키 발급(학습 opt-out 먼저)·`providers.exaone` 등록, `auxiliary.compression` 지정
 - [ ] **Discord**: 봇 생성(Message Content Intent), 게이트웨이 연결, 허용 사용자·`platform_toolsets` 제한
 - [ ] **Notion**: Projects·Tasks·Jobs DB 생성, integration 토큰 발급·공유
