@@ -5,20 +5,21 @@
 **완료 기준**
 
 - [x] "비서" 페이지 아래에 Projects, Milestones, Tasks, Jobs DB가 문서 스키마대로 있다.
-- [ ] integration 토큰을 발급해 서버 `~/assistant-data/.env`에 넣었다.
-- [ ] integration이 "비서" 페이지에만 연결되어 있다.
+- [x] integration 토큰을 발급해 서버 `~/assistant-data/.env`에 넣었다. (2026-11-20, 사용자)
+- [x] integration이 "비서" 페이지에만 연결되어 있다. (2026-11-20, 사용자)
+- [ ] 토큰 동작 확인: planner MCP v1에서 `list_tasks`
 
 ## 1. DB (2026-11-20 생성 완료)
 
-Claude가 Notion 커넥터로 만들었다. 부모 페이지는 워크스페이스의 개인 페이지 "비서"다.
+Claude가 Notion 커넥터로 만들었다. 워크스페이스는 `yoonsb1374@gmail.com` 계정의 **Hermes Assistant**이고, 부모 페이지는 그 안의 개인 페이지 "비서"다. (처음에 학교 계정 워크스페이스에 잘못 만든 DB는 휴지통으로 보냈다.)
 
 | DB | 데이터 소스 ID | 제목 속성 |
 | --- | --- | --- |
-| [비서](https://app.notion.com/p/41d3b2680aa781e5b8a9dd02f3f3d576) (부모 페이지) | — | — |
-| [Projects](https://app.notion.com/p/41d3b2680aa781998041ed73cf01c728) | `41d3b268-0aa7-81d5-95c3-000b6a79bd04` | 이름 |
-| [Milestones](https://app.notion.com/p/41d3b2680aa781e2b64ac94e246ff373) | `41d3b268-0aa7-815f-b833-000b14cb767d` | 이름 |
-| [Tasks](https://app.notion.com/p/41d3b2680aa781138edcf027268a33aa) | `41d3b268-0aa7-8152-b0fa-000b8b715bd3` | 제목 |
-| [Jobs](https://app.notion.com/p/41d3b2680aa781bf8ec6f12a00093380) | `41d3b268-0aa7-81c5-882c-000b2b43fa4a` | 회사 |
+| [비서](https://app.notion.com/p/41da70a526e78172bef2d121718492b8) (부모 페이지) | — | — |
+| [Projects](https://app.notion.com/p/41da70a526e78108a487f13df025e2d2) | `41da70a5-26e7-813d-8604-000b2e8a24f3` | 이름 |
+| [Milestones](https://app.notion.com/p/41da70a526e7812ca1d1d8f918074395) | `41da70a5-26e7-8187-a6e6-000bb3282705` | 이름 |
+| [Tasks](https://app.notion.com/p/41da70a526e781e597f8ea922993fe4c) | `41da70a5-26e7-810a-a6fc-000b620b0253` | 제목 |
+| [Jobs](https://app.notion.com/p/41da70a526e78168a6d4d6fd046999c8) | `41da70a5-26e7-81d7-bc8b-000b625312f0` | 회사 |
 
 ID는 비밀 값이 아니다. planner MCP는 이 데이터 소스 ID를 `planner.yaml`에서 읽는다.
 
@@ -39,7 +40,7 @@ ID는 비밀 값이 아니다. planner MCP는 이 데이터 소스 ID를 `planne
 ## 2. integration 토큰 발급 (직접)
 
 1. https://www.notion.so/profile/integrations 에서 **새 integration**을 만든다.
-   - 종류: **Internal**, 워크스페이스: "비서" 페이지가 있는 워크스페이스
+   - 종류: **Internal**, 워크스페이스: **Hermes Assistant**
    - 이름: 예) `assistant-planner`
 2. **Capabilities**는 필요한 것만 켠다.
    - 콘텐츠: Read, Update, Insert 켬

@@ -402,7 +402,7 @@ assistant/
 - [x] **모델**: `openai-codex` 로그인, 메인·압축 모델 지정, K-EXAONE fallback 등록(`deploy/hermes/configure.sh`) — 2026-11-20 완료
 - [x] **Discord**: 봇 생성(Message Content·Server Members Intent), 게이트웨이 연결, 허용 사용자 — 2026-11-20 완료 (설정은 사용자가 직접)
 - [ ] **운영 cron**: EXAONE 키 만료 알림 + `hermes fallback check --live` (2026-12-15 전)
-- [ ] **Notion**: Projects·Milestones·Tasks·Jobs DB 생성(2026-11-20 완료), integration 토큰 발급·공유 ([절차](setup/02-notion.md))
+- [x] **Notion**: Projects·Milestones·Tasks·Jobs DB 생성, integration 토큰 발급·공유 ([절차](setup/02-notion.md)) — 2026-11-20 완료 (토큰 동작은 planner MCP v1에서 확인)
 - [ ] **Google**: Cloud 프로젝트, Calendar API, OAuth 클라이언트(데스크톱 앱, 프로덕션 게시), 캘린더 4개 생성, 토큰 발급
 - [ ] **planner MCP v1**: `list/add/update/complete_task`, `get_day`, `find_free_slots`, GitHub Actions CI(pytest), Discord `platform_toolsets` 제한(planner MCP·메모리·세션 검색만)
 - [ ] **planner MCP 프로젝트 v1**: `list/add/update_project`, `add/update_milestone`, `sync_project_calendar`, Task의 단계 연결
