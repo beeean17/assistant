@@ -1,6 +1,6 @@
 # assistant
 
-홈서버의 Hermes Agent 위에서 Discord로 대화하는 개인 비서. 이 저장소는 설계 문서, MCP 서버(planner, jobs), 배포 설정을 함께 둔다.
+홈서버의 Hermes Agent 위에서 Discord로 대화하는 개인 비서. 이 저장소는 설계 문서, MCP 서버(planner, inbox, jobs), 배포 설정을 함께 둔다.
 
 대상 서버는 x86_64 Ubuntu Server(i5-7200U, 2코어 4스레드, RAM 12GB) 한 대다. 이 서버에 저장소를 clone해 Docker 이미지를 직접 빌드하고 Compose로 실행한다. 레지스트리는 쓰지 않는다. 의존성과 리소스는 이 사양 기준으로 고른다.
 
@@ -22,7 +22,7 @@
 - 시간 계산, 빈 시간 계산, 블록 배치, 중복 판단은 코드로 한다. LLM에게 넘기는 도구 설명에 계산을 맡기는 표현을 쓰지 않는다.
 - Calendar·Notion 쓰기는 `propose_plan` → 승인 → `apply_plan` 흐름을 지킨다. 자동 반영 여부는 코드가 판단해 반환한다(설계 문서의 "자동 반영 기준").
 - 에이전트가 만든 Calendar 이벤트에는 `extendedProperties.private`에 `task_id`, `plan_id`, `kind`를 넣는다.
-- Calendar·Notion 자격 증명은 planner MCP만 가진다. K-EXAONE은 채용 공고 cron과 GPT fallback에만 쓴다. 그 밖에 개인 데이터를 K-EXAONE으로 보내는 경로(작업별 provider 지정 등)를 만들지 않는다.
+- Calendar 자격 증명과 "비서" 페이지의 Notion 토큰은 planner MCP만 가진다. inbox MCP는 Inbox DB에만 닿는 별도 Notion 토큰을 쓴다. K-EXAONE은 채용 공고 cron과 GPT fallback에만 쓴다. 그 밖에 개인 데이터를 K-EXAONE으로 보내는 경로(작업별 provider 지정 등)를 만들지 않는다.
 
 ## 코드 규칙
 
