@@ -149,6 +149,11 @@ Notion은 프로젝트와 할 일의 원본이다. 반복은 Notion에 만들지
 - Calendar API는 planner MCP만 호출한다. Hermes 기본 Google Workspace 스킬은 설치하지 않는다. 이 스킬은 Gmail·Drive를 포함한 전체 범위를 요청하고, 설치하면 LLM이 승인 흐름을 거치지 않고 캘린더에 쓸 수 있다.
 - OAuth 범위는 `calendar.events` 하나다. 캘린더 네 개는 사람이 직접 만들고, ID는 `planner.yaml`에 적는다.
 - OAuth 동의 화면은 게시 상태를 "프로덕션"으로 둔다. "테스트" 상태에서는 refresh token이 7일 뒤 만료된다. 미인증 앱 경고는 본인만 쓰므로 무시한다.
+- 프로덕션으로 게시하려면 브랜딩에 홈페이지·개인정보처리방침 URL과 그 도메인(승인된 도메인)이 있어야 한다. 이 저장소의 `gh-pages` 브랜치를 GitHub Pages로 띄워 쓴다.
+  - 홈페이지: `https://beeean17.github.io/assistant/`
+  - 개인정보처리방침: `https://beeean17.github.io/assistant/privacy.html`
+  - 승인된 도메인: `beeean17.github.io`
+  - 앱 로고는 올리지 않는다(브랜딩 인증 대상이 된다).
 - 최초 인증은 데스크톱에서 planner의 인증 스크립트로 한 번 하고, 만든 토큰 파일을 서버 `~/assistant-data/planner/`로 복사한다.
 - 폰에서는 Google Calendar 앱으로 타임라인과 알림을, Notion Calendar 앱으로 Notion 마감을 함께 확인한다.
 
@@ -440,6 +445,8 @@ assistant/
 | 2026-11-19 | K-EXAONE 키 발급과 provider 등록을 모델 단계에서 jobs 단계로 옮긴다 | K-EXAONE은 채용 공고에만 쓰므로 그전까지 필요 없고, 키가 30일마다 만료된다 (2026-11-20 결정으로 대체) |
 | 2026-11-20 | Discord 설정은 사용자가 직접 했다. `platform_toolsets` 제한은 planner MCP v1로, 키 만료 알림 cron은 별도 "운영 cron" 항목으로 옮긴다 | 도구 제한은 MCP를 붙일 때 함께 정하는 게 자연스럽고, 키 만료(2026-12-20)는 planner 일정보다 먼저 온다 |
 | 2026-11-20 | Notion DB는 Claude가 Notion 커넥터로 "비서" 페이지 아래에 만든다 | 속성 이름·옵션·관계를 문서와 정확히 맞춘다 |
+| 2026-11-22 | 저장소를 공개하고, OAuth 브랜딩용 홈페이지·개인정보처리방침을 `gh-pages` 브랜치의 GitHub Pages로 둔다 | Google이 프로덕션 게시에 두 URL과 승인된 도메인을 요구한다. 비밀 값은 저장소 밖(`~/assistant-data`)에만 있다 |
+| 2026-11-22 | 이 저장소의 커밋 이메일을 다른 개인 Gmail로 바꾼다 | 공개 저장소에 기존 이메일을 더 남기지 않는다. 이전 커밋 기록은 다시 쓰지 않는다 |
 | 2026-11-20 | K-EXAONE을 GPT의 fallback으로 등록한다. 학습 동의 설정은 확인하지 못한 채 진행한다 | Codex 토큰 격리나 Plus 한도 소진 때 비서가 멈추지 않게 한다. 동의 설정 확인은 미결정 사항에 남긴다 |
 | 2026-11-19 | Hermes 설정은 `config.yaml` 대신 `deploy/hermes/configure.sh`로 관리한다 | `config.yaml`은 Hermes가 생성·마이그레이션하는 큰 파일이라 저장소 기준본과 쉽게 어긋난다 |
 | 2026-11-20 | 프로젝트 관리는 Slack이 아니라 Notion에 둔다 | DB 간 Relation과 날짜 범위가 필요하고, 혼자 쓰는 용도라 메신저의 이점이 없다 |
