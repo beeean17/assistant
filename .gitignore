@@ -1,11 +1,25 @@
-# secrets and runtime state
+# secrets and credentials (never commit; real values live in ~/assistant-data on the server)
 .env
 *.env
 !.env.example
+client_secret*.json
+credentials.json
+token.json
+*_token.json
+auth.json
+*.pem
+*.key
+
+# local config with real values (only *.example is committed)
+planner.yaml
+
+# runtime state
 data/
-google_token.json
 *.sqlite
 *.sqlite3
+*.db
+*.db-wal
+*.db-shm
 
 # python
 __pycache__/
@@ -13,3 +27,17 @@ __pycache__/
 .venv/
 .pytest_cache/
 .ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# editors and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Claude Code local settings
+.claude/settings.local.json
