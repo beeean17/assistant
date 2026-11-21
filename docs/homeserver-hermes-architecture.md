@@ -168,6 +168,11 @@ calendars:                 # Google Calendar ID
   plan: "..."
   project: "..."
   deadline: "..."
+notion:                    # Notion 데이터 소스 ID (setup/02-notion.md)
+  tasks: "..."
+  projects: "..."
+  milestones: "..."
+  jobs: "..."
 day: { start: "08:30", end: "01:00" }   # end가 start보다 이르면 다음 날 시각
 blocked:
   - { name: 점심, time: "12:00-13:00" }
@@ -189,10 +194,38 @@ project:           # 프로젝트 점검 (아래 참고)
 - **시간이 정해진 반복**(수업, 정기 회의)은 "고정" 캘린더의 반복 일정으로 만든다.
 - **시간이 유동적인 반복**(매일 Java 1시간, 주 3회 운동)은 `routines`에 적고, 계획을 짤 때마다 블록을 새로 배치한다. 주 단위 횟수는 이번 주(월요일 시작) "계획" 캘린더에 있는 같은 루틴 블록을 세어 계산한다. 별도 데이터는 쌓지 않는다.
 - 수치는 예시이며 1\~2주 써 본 뒤 조정한다.
+- 실제 파일은 서버 `~/assistant-data/planner/planner.yaml`에 두고, 저장소에는 `deploy/planner.yaml.example`만 둔다.
 
 ## MCP 서버와 도구
 
-MCP는 planner와 jobs 두 개를 Python(FastMCP, stdio)으로 만들고 Hermes 컨테이너 안에서 실행한다. 각 MCP는 독립된 uv 프로젝트로 두고, 서버 진입점은 한 파일로, 배치 알고리즘처럼 테스트가 필요한 로직은 별도 모듈로 나눈다.
+MCP는 planner와 jobs 두 개를 Python(MCP Python SDK 2.x의 `MCPServer`, stdio)으로 만들고 Hermes 컨테이너 안에서 실행한다. 각 MCP는 독립된 uv 프로젝트로 두고, 서버 진입점은 한 파일로, 배치 알고리즘처럼 테스트가 필요한 로직은 별도 모듈로 나눈다.
+
+- uv 프로젝트는 패키지로 빌드하지 않고(`package = false`) `python -m planner.server`로 실행한다. 소스 트리에 아무것도 쓰지 않으므로 `mcp/`를 읽기 전용으로 마운트할 수 있다.
+- 가상 환경은 `/opt/data/<server>/.venv`, uv 캐시는 `/opt/data/.cache/uv`에 둔다. `configure.sh`가 배포 때 `uv sync --frozen --no-dev`로 미리 설치한다.
+- 비밀 값은 MCP `env`에서 `${NOTION_TOKEN}`처럼 참조하고, 실제 값은 `~/assistant-data/.env`에만 있다.
+- Google 클라이언트는 캘린더 도구를 처음 부를 때 만든다. Google 토큰이 없어도 Notion 도구는 동작한다.
+- Notion API 버전은 `2026-03-11`이다.
+
+**planner 코드 구성** (`mcp/planner/planner/`)
+
+| 모듈 | 내용 |
+| --- | --- |
+| `config.py` | `planner.yaml` 읽기·검증 |
+| `days.py` | 논리적 하루, 구간 계산, 빈 시간 (순수 함수) |
+| `notion.py` | Tasks 속성 매핑(순수 함수)과 Notion HTTP 클라이언트 |
+| `gcal.py` | 일정 변환(순수 함수), refresh token 갱신, Calendar HTTP 클라이언트 |
+| `service.py` | 도구 동작. 저장소·캘린더·시계를 인자로 받아 테스트에서 가짜로 바꾼다 |
+| `server.py` | MCP 도구 정의와 오류 변환 |
+| `google_auth.py` | 데스크톱에서 한 번 실행하는 Google 로그인 |
+
+**시간 규칙** (코드와 테스트로 고정)
+
+- 논리적 하루는 `day.start`부터 `day.end`까지다. 자정을 넘는 하루(08:30\~01:00)에서 00:00\~01:00은 전날에 속하고, 01:00\~08:30은 다가오는 날에 속한다. 그래서 아침 7시의 "오늘"은 그날이다.
+- 주는 월요일에 시작한다.
+- 빈 시간 = 하루 범위 − `blocked` − (고정 일정 + 앞뒤 `block.buffer`). 버퍼는 일정 주위에만 두고 식사 시간 주위에는 두지 않는다. `block.min`보다 짧은 조각은 버린다. 오늘은 지금 이후만 센다.
+- `slack_ratio`는 시간 구간을 깎지 않고 하루 배치 가능 시간(`plannable_minutes`)에서만 뺀다.
+- "바쁨 아님(투명)"으로 표시된 일정은 시간을 막지 않는다. 바쁨인 종일 일정은 그 날짜의 논리적 하루 전체(자정 이후 부분 포함)를 막는다.
+- `find_free_slots`는 기본으로 고정 일정만 뺀다. `include_planned`를 켜면 "계획" 블록도 뺀다. 한 번에 최대 14일.
 
 **planner MCP** (Notion API + Google Calendar API)
 
@@ -334,14 +367,15 @@ assistant/
 ├─ CLAUDE.md
 ├─ docs/
 ├─ mcp/
-│  ├─ planner/        # uv 프로젝트: server.py, scheduling 모듈, tests/
+│  ├─ planner/        # uv 프로젝트: planner/(server.py, days.py, notion.py, gcal.py …), tests/
 │  └─ jobs/
 └─ deploy/
    ├─ compose.yaml    # hermes, camofox
    ├─ Dockerfile      # FROM nousresearch/hermes-agent + mcp/
    ├─ .env.example
-   ├─ hermes/configure.sh  # 저장소가 관리하는 Hermes 설정 (hermes config set)
+   ├─ hermes/configure.sh  # 저장소가 관리하는 Hermes 설정 (hermes config set), MCP 의존성 설치
    └─ planner.yaml.example
+.github/workflows/ci.yml   # pytest (서버에는 접근하지 않음)
 ```
 
 **서버**
@@ -393,7 +427,7 @@ assistant/
 **보안**
 
 - Discord 허용 사용자(`DISCORD_ALLOWED_USERS`)는 본인 ID 하나. 봇에는 Message Content Intent와 Server Members Intent만 켜고(공식 문서상 둘 다 필수), Public Bot은 끈다.
-- Discord 플랫폼 도구는 `platform_toolsets.discord`로 planner·jobs MCP, 메모리, 세션 검색만 연다. 터미널, 파일, 코드 실행은 끈다.
+- Discord 플랫폼 도구는 `platform_toolsets.discord`로 메모리, 세션 검색, planner MCP만 연다(jobs MCP는 jobs 단계에서 추가). 터미널, 파일, 코드 실행, 웹 검색은 쓰지 않는다.
 - Google OAuth는 `calendar.events`만, Notion 토큰은 네 DB에만 공유.
 - stdio MCP에는 PATH, HOME 등 일부를 빼고 환경 변수가 전달되지 않으므로 필요한 키만 `env` 블록에 명시한다.
 - 서버 외부 접근은 Tailscale로만 한다.
@@ -446,6 +480,11 @@ assistant/
 | 2026-11-20 | Discord 설정은 사용자가 직접 했다. `platform_toolsets` 제한은 planner MCP v1로, 키 만료 알림 cron은 별도 "운영 cron" 항목으로 옮긴다 | 도구 제한은 MCP를 붙일 때 함께 정하는 게 자연스럽고, 키 만료(2026-12-20)는 planner 일정보다 먼저 온다 |
 | 2026-11-20 | Notion DB는 Claude가 Notion 커넥터로 "비서" 페이지 아래에 만든다 | 속성 이름·옵션·관계를 문서와 정확히 맞춘다 |
 | 2026-11-22 | 저장소를 공개하고, OAuth 브랜딩용 홈페이지·개인정보처리방침을 `gh-pages` 브랜치의 GitHub Pages로 둔다 | Google이 프로덕션 게시에 두 URL과 승인된 도메인을 요구한다. 비밀 값은 저장소 밖(`~/assistant-data`)에만 있다 |
+| 2026-11-22 | MCP는 MCP Python SDK 2.x(`MCPServer`)로 만든다 | SDK 2.x에서 FastMCP가 `MCPServer`로 바뀌었다 |
+| 2026-11-22 | planner는 패키지로 빌드하지 않는 uv 프로젝트로, `mcp/`를 읽기 전용으로 마운트하고 가상 환경은 `/opt/data`에 둔다 | 서버 저장소 폴더에 실행 산출물을 남기지 않는다 |
+| 2026-11-22 | 01:00\~08:30은 다가오는 날로 계산한다 (자정\~01:00만 전날) | 아침에 "오늘"을 물으면 그날을 기대한다 |
+| 2026-11-22 | 투명 일정은 무시하고, 바쁨인 종일 일정은 논리적 하루 전체를 막는다 | Google Calendar의 "바쁨/한가함" 표시를 그대로 따른다 |
+| 2026-11-22 | `planner.yaml`은 예시 값으로 시작한다 | 1\~2주 써 본 뒤 조정한다 (미결정 사항 유지) |
 | 2026-11-22 | 이 저장소의 커밋 이메일을 다른 개인 Gmail로 바꾼다 | 공개 저장소에 기존 이메일을 더 남기지 않는다. 이전 커밋 기록은 다시 쓰지 않는다 |
 | 2026-11-20 | K-EXAONE을 GPT의 fallback으로 등록한다. 학습 동의 설정은 확인하지 못한 채 진행한다 | Codex 토큰 격리나 Plus 한도 소진 때 비서가 멈추지 않게 한다. 동의 설정 확인은 미결정 사항에 남긴다 |
 | 2026-11-19 | Hermes 설정은 `config.yaml` 대신 `deploy/hermes/configure.sh`로 관리한다 | `config.yaml`은 Hermes가 생성·마이그레이션하는 큰 파일이라 저장소 기준본과 쉽게 어긋난다 |

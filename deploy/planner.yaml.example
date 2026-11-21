@@ -1,0 +1,34 @@
+# Copy to ~/assistant-data/planner/planner.yaml on the server and fill in the
+# calendar IDs (Google Calendar > Settings > Integrate calendar > Calendar ID).
+# Values below are the starting point from docs/homeserver-hermes-architecture.md;
+# tune them after 1-2 weeks of use.
+timezone: Asia/Seoul
+
+calendars:
+  fixed: "CHANGE_ME@group.calendar.google.com"     # or your primary calendar (your Gmail address)
+  plan: "CHANGE_ME@group.calendar.google.com"
+  project: "CHANGE_ME@group.calendar.google.com"
+  deadline: "CHANGE_ME@group.calendar.google.com"
+
+notion:            # data source IDs (docs/setup/02-notion.md), not secret
+  tasks: "41da70a5-26e7-810a-a6fc-000b620b0253"
+  projects: "41da70a5-26e7-813d-8604-000b2e8a24f3"
+  milestones: "41da70a5-26e7-8187-a6e6-000bb3282705"
+  jobs: "41da70a5-26e7-81d7-bc8b-000b625312f0"
+
+day: { start: "08:30", end: "01:00" }   # end earlier than start = next day
+blocked:
+  - { name: 점심, time: "12:00-13:00" }
+  - { name: 저녁, time: "18:30-19:30" }
+focus_hours: ["09:30-12:00", "20:00-23:00"]  # P1 tasks first (planner v2)
+block: { min: 30m, max: 120m, buffer: 15m }
+slack_ratio: 0.2   # keep 20% of each day's free time unplanned
+routines:
+  - { name: Java 공부, duration: 60m, frequency: daily, prefer: evening }
+  - { name: 운동, duration: 90m, frequency: 3/week }
+auto_apply:        # planner v3
+  max_changed_blocks: 2
+  same_day_only: true
+project:           # planner project v2
+  horizon: 8w
+  risk_days: 2
