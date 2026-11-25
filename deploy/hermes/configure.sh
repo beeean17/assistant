@@ -16,6 +16,25 @@ set -euo pipefail
 
 container="${HERMES_CONTAINER:-hermes}"
 
+# The image's init remaps the hermes user to HERMES_UID and fixes /opt/data
+# ownership after the container starts. A `docker exec -u hermes` right after
+# `compose up` can still run as the image default UID 10000 and fail to write
+# /opt/data, so wait until hermes owns /opt/data and can write to it.
+wait_for_container() {
+  local i
+  for ((i = 0; i < 60; i++)); do
+    if docker exec -u hermes "$container" sh -c \
+      'test "$(id -u)" = "$(stat -c %u /opt/data)" && test -w /opt/data' 2>/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+  echo "configure: container $container not ready after 60s (hermes user cannot write /opt/data)" >&2
+  exit 1
+}
+
+wait_for_container
+
 # MCP servers under /opt/mcp (bind-mounted from mcp/). Each is a uv project.
 MCP_SERVERS=(planner)
 
