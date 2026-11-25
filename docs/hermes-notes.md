@@ -13,7 +13,7 @@
 | Docker 이미지 | `nousresearch/hermes-agent` (`latest`/`stable`, `main`, `X.Y.Z`). 모든 상태가 `/opt/data` 하나에 있다(config.yaml, .env, auth.json, sessions, memories). 부팅 시 config.yaml을 마이그레이션하며 고쳐 쓸 수 있다 | /user-guide/docker, 저장소 `Dockerfile` |
 | `uv` | `v0.23.2` 이미지에서 `/opt/hermes/tools/uv-0.13.5-linux-x64/uv`에 있고 PATH에는 없다. `deploy/Dockerfile`이 `ghcr.io/astral-sh/uv:0.13.5`에서 복사해 해결 | 로컬 빌드 확인 (2026-11-19) |
 | 이미지 실측 (`v0.23.2`) | 크기 약 4.7GB(Chromium 포함), 대기 메모리 약 320MB. 공식 권장은 메모리 1GB 이상, 브라우저 도구 사용 시 2GB 이상 | 로컬 실행 확인, /user-guide/docker |
-| 실행 사용자 | 기본 UID 10000(`hermes`). `HERMES_UID`/`HERMES_GID`(별칭 `PUID`/`PGID`)로 호스트 사용자와 맞추면 `/opt/data` 파일이 호스트 사용자 소유가 된다. `docker exec hermes hermes ...`는 자동으로 `hermes` 사용자로 내려간다 | /user-guide/docker, 로컬 확인 |
+| 실행 사용자 | 기본 UID 10000(`hermes`). `HERMES_UID`/`HERMES_GID`(별칭 `PUID`/`PGID`)로 호스트 사용자와 맞추면 `/opt/data` 파일이 호스트 사용자 소유가 된다. `docker exec hermes hermes ...`는 자동으로 `hermes` 사용자로 내려간다. UID 변경은 컨테이너가 시작된 뒤 init이 하므로, 시작 직후의 `docker exec -u hermes`는 UID 10000으로 돌아 `/opt/data`에 쓰지 못할 수 있다 | /user-guide/docker, 로컬 확인, 서버 배포 확인 (2026-11-26) |
 | 프로세스 관리 | `gateway run`은 s6-overlay가 감독한다(죽으면 재시작, 컨테이너 재시작 시 이전 상태 복구). ENTRYPOINT(`/init`)를 바꾸지 않는다. 바꾸면 MCP 같은 자식 프로세스 좀비를 거두지 못한다 | /user-guide/docker |
 | 로그 | `docker logs`와 `/opt/data/logs/gateways/default/current`(10MB 순환) 양쪽에 남는다 | /user-guide/docker |
 | 시간대 | `config.yaml`의 `timezone:` 또는 `HERMES_TIMEZONE`이 에이전트 시계와 cron 일정을 정한다. 로그 시각은 컨테이너 `TZ`를 따른다. cron 작업별 `--timezone`도 있다 | /user-guide/configuration, /user-guide/features/cron |

@@ -7,7 +7,7 @@
 - [x] "비서" 페이지 아래에 Projects, Milestones, Tasks, Jobs DB가 문서 스키마대로 있다.
 - [x] integration 토큰을 발급해 서버 `~/assistant-data/.env`에 넣었다. (2026-11-20, 사용자)
 - [x] integration이 "비서" 페이지에만 연결되어 있다. (2026-11-20, 사용자)
-- [ ] 토큰 동작 확인: planner MCP v1에서 `list_tasks`
+- [x] 토큰 동작 확인: planner MCP v1에서 `list_tasks` (2026-11-26. 처음엔 `object_not_found`, integration 연결을 고친 뒤 통과)
 
 ## 1. DB (2026-11-20 생성 완료)
 
