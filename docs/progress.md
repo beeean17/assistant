@@ -10,8 +10,8 @@
 | 모델 | 완료 (2026-11-20) | PR #5, #7. GPT OAuth + K-EXAONE fallback |
 | Discord | 완료 (2026-11-20) | 사용자가 직접 설정. 봇 연결·허용 사용자 동작 확인 |
 | Notion | 완료 (2026-11-20) | PR #8, #10. Hermes Assistant 워크스페이스, integration 연결 |
-| Google | **거의 완료** | 캘린더 4개 생성, 토큰 발급·서버 배치(2026-11-26). Discord에서 캘린더 도구 확인 남음 |
-| planner MCP v1 | **배포됨, 확인 중** | PR #13 머지·배포, `hermes mcp test planner` 도구 6개. Notion 접근 오류 해결과 Discord 확인 남음 |
+| Google | 완료 (2026-11-26) | 캘린더 4개(모두 새 캘린더), 토큰 서버 배치 |
+| planner MCP v1 | 완료 (2026-11-26) | PR #13, #14. 서버 배포, Discord에서 도구 6개 동작 확인 |
 | 운영 cron | 대기 | **2026-12-15 전**에 해야 함 (EXAONE 키 2026-12-20 만료) |
 | 그 뒤 단계 | 대기 | 아래 "앞으로 할 일" |
 
@@ -44,10 +44,9 @@
 
 ## 지금 할 일 (순서대로)
 
-1. **Notion 접근 오류:** `list_tasks`가 `object_not_found`(토큰은 유효, 접근 권한 없음). Tasks 데이터 소스는 Hermes Assistant 워크스페이스에 그대로 있다(Claude 커넥터로 확인). 서버 토큰의 integration이 Hermes Assistant 워크스페이스 소속인지, "비서" 페이지에 연결되어 있는지 확인한다(사용자).
-2. **Discord 확인:** [setup/03-planner.md](setup/03-planner.md) 4번 표의 다섯 가지. GPT 구독이 없는 동안은 K-EXAONE으로 확인하는 셈이라, 도구 호출이 어색하면 모델 탓일 수 있다.
-3. **PR #14 머지.** 다음 배포 때 `configure.sh`가 권한 오류 없이 지나가는지 본다.
-4. 확인이 끝나면 설계 문서 구현 순서에서 **Google**, **planner MCP v1**을 체크하고 이 문서를 갱신한다.
+1. **PR #14 머지.** 다음 배포 때 `configure.sh`가 권한 오류 없이 지나가는지 본다.
+2. **운영 cron (2026-12-15 전).** 아래 "앞으로 할 일" 1번.
+3. **inbox 결정:** PR #9(자료 수집 설계)를 머지할지, inbox MCP를 planner 프로젝트 v1 앞으로 당길지 정한다. 미결정 사항에 "Google 단계가 끝날 때" 정하기로 되어 있다.
 
 ## 앞으로 할 일
 
@@ -66,7 +65,7 @@
 - 채용 공고 소스: jobs MCP 전
 - K-EXAONE 도구 호출 안정성: jobs 단계에서 테스트
 - `planner.yaml` 실제 값: 예시 값으로 시작, 2주 뒤 조정
-- K-EXAONE 학습 활용 동의 설정 확인: 2026-12-20 키 교체 전
+- K-EXAONE 학습 활용 동의 설정 확인: 2026-12-20 키 교체 전. GPT 구독이 끊긴 동안은 모든 대화가 K-EXAONE으로 가므로 앞당겨 확인하는 게 좋다
 
 ## 알려진 문제와 주의
 

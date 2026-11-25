@@ -4,9 +4,9 @@ planner MCP v1(`list/add/update/complete_task`, `get_day`, `find_free_slots`)을
 
 **완료 기준**
 
-- [ ] 서버 `~/assistant-data/planner/`에 `planner.yaml`과 `google_token.json`이 있다.
-- [ ] `hermes mcp test planner`가 연결되고 도구 6개를 보여 준다.
-- [ ] Discord에서 "할 일 목록 보여 줘", "오늘 일정 보여 줘"에 Notion·Calendar 내용으로 답한다.
+- [x] 서버 `~/assistant-data/planner/`에 `planner.yaml`과 `google_token.json`이 있다.
+- [x] `hermes mcp test planner`가 연결되고 도구 6개를 보여 준다.
+- [x] Discord에서 "할 일 목록 보여 줘", "오늘 일정 보여 줘"에 Notion·Calendar 내용으로 답한다. (2026-11-26, 4번 표 다섯 가지와 고정 일정 반영 확인)
 
 ## 1. Google 토큰 발급 (데스크톱, 직접)
 
@@ -78,7 +78,9 @@ ssh server 'docker exec hermes hermes mcp test planner'
 | 메시지 | 원인 |
 | --- | --- |
 | `planner config not found` | 2번의 `planner.yaml`이 없다 |
-| `Notion rejected the token` | `.env`의 `NOTION_TOKEN`이 틀렸거나 integration이 "비서" 페이지에 연결되지 않았다 |
+| `Notion rejected the token` | `.env`의 `NOTION_TOKEN`이 틀렸다 |
+| `object_not_found: Could not find database …` | 토큰은 유효하지만 integration이 "비서" 페이지에 연결되지 않았거나 다른 워크스페이스 소속이다 |
 | `Google token file not found` | 1번의 토큰 파일이 서버에 없다 |
+| `Google token file is missing refresh_token, client_id, client_secret` | 토큰 대신 Google Cloud에서 받은 클라이언트 JSON을 올렸다. 클라이언트 JSON은 1번 명령의 입력이고, 서버에는 그 명령이 만든 파일을 올린다 |
 | `Calendar '…' not found` | `planner.yaml`의 캘린더 ID가 틀렸다 |
 | `refresh token was revoked or expired` | Google 권한을 취소했거나 동의 화면이 테스트 상태다. 1번을 다시 한다 |
