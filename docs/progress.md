@@ -11,7 +11,7 @@
 | Discord | 완료 (2026-11-20) | 사용자가 직접 설정. 봇 연결·허용 사용자 동작 확인 |
 | Notion | 완료 (2026-11-20) | PR #8, #10. Hermes Assistant 워크스페이스, integration 연결 |
 | Google | **거의 완료** | 캘린더 4개 생성, 토큰 발급·서버 배치(2026-11-26). Discord에서 캘린더 도구 확인 남음 |
-| planner MCP v1 | **배포됨, 확인 중** | PR #13 머지·배포, `hermes mcp test planner` 도구 6개. Notion 접근 오류와 모델 fallback 해결 남음 |
+| planner MCP v1 | **배포됨, 확인 중** | PR #13 머지·배포, `hermes mcp test planner` 도구 6개. Notion 접근 오류 해결과 Discord 확인 남음 |
 | 운영 cron | 대기 | **2026-12-15 전**에 해야 함 (EXAONE 키 2026-12-20 만료) |
 | 그 뒤 단계 | 대기 | 아래 "앞으로 할 일" |
 
@@ -27,7 +27,7 @@
 
 **외부 서비스**
 
-- ChatGPT Plus(`openai-codex`) 로그인 완료. 사용 가능 모델 목록은 `hermes-notes.md`. **2026-11-26 Discord에서 `gpt-6.2-sol ... unavailable (model entitlement)`로 K-EXAONE fallback이 일어났다. 원인 확인 중.**
+- ChatGPT Plus(`openai-codex`) 로그인 완료. 사용 가능 모델 목록은 `hermes-notes.md`. **2026-11-26 현재 Plus 구독이 끊겨 있다(재구독 검토 중).** 그래서 모든 대화가 K-EXAONE fallback으로 처리된다(`model entitlement`). 의도한 상태다.
 - K-EXAONE 키 2026-11-20 발급 → **2026-12-20 만료**. 학습 활용 동의 설정은 확인하지 못함.
 - Notion: [비서](https://app.notion.com/p/41da70a526e78172bef2d121718492b8) 페이지 아래 Projects·Milestones·Tasks·Jobs. ID는 [setup/02-notion.md](setup/02-notion.md).
 - Google Cloud: Calendar API 사용, 동의 화면 **프로덕션**(미인증, 범위 `calendar.events`), 데스크톱 앱 클라이언트 JSON 받음(사용자 데스크톱에 보관, 저장소 밖). 캘린더 고정·계획·프로젝트·마감은 모두 새 캘린더(기본 캘린더 아님)이고 ID는 서버 `planner.yaml`에만 있다.
@@ -44,11 +44,10 @@
 
 ## 지금 할 일 (순서대로)
 
-1. **모델 fallback 원인 확인:** `ssh server 'docker exec hermes hermes status'`로 `openai-codex` 로그인 상태를 본다. 로그인 풀림, Plus 구독 변경, 모델 목록 변경 중 무엇인지 찾고 고친다. 해결 전에는 Discord에서 개인 정보가 담긴 대화를 쉰다(K-EXAONE으로 간다).
-2. **Notion 접근 오류:** `list_tasks`가 `object_not_found`(토큰은 유효, 접근 권한 없음). Tasks 데이터 소스는 Hermes Assistant 워크스페이스에 그대로 있다(Claude 커넥터로 확인). 서버 토큰의 integration이 Hermes Assistant 워크스페이스 소속인지, "비서" 페이지에 연결되어 있는지 확인한다(사용자).
-3. **Discord 확인:** [setup/03-planner.md](setup/03-planner.md) 4번 표의 다섯 가지.
-4. **PR #14 머지.** 다음 배포 때 `configure.sh`가 권한 오류 없이 지나가는지 본다.
-5. 확인이 끝나면 설계 문서 구현 순서에서 **Google**, **planner MCP v1**을 체크하고 이 문서를 갱신한다.
+1. **Notion 접근 오류:** `list_tasks`가 `object_not_found`(토큰은 유효, 접근 권한 없음). Tasks 데이터 소스는 Hermes Assistant 워크스페이스에 그대로 있다(Claude 커넥터로 확인). 서버 토큰의 integration이 Hermes Assistant 워크스페이스 소속인지, "비서" 페이지에 연결되어 있는지 확인한다(사용자).
+2. **Discord 확인:** [setup/03-planner.md](setup/03-planner.md) 4번 표의 다섯 가지. GPT 구독이 없는 동안은 K-EXAONE으로 확인하는 셈이라, 도구 호출이 어색하면 모델 탓일 수 있다.
+3. **PR #14 머지.** 다음 배포 때 `configure.sh`가 권한 오류 없이 지나가는지 본다.
+4. 확인이 끝나면 설계 문서 구현 순서에서 **Google**, **planner MCP v1**을 체크하고 이 문서를 갱신한다.
 
 ## 앞으로 할 일
 
