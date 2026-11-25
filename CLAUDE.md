@@ -26,7 +26,7 @@
 
 ## 코드 규칙
 
-- Python, MCP 하나당 `mcp/<name>/`의 독립 uv 프로젝트. FastMCP stdio 서버.
+- Python, MCP 하나당 `mcp/<name>/`의 독립 uv 프로젝트(`package = false`, `python -m <name>.server`로 실행). MCP Python SDK 2.x의 `MCPServer` stdio 서버. 예상한 실패는 `ToolError`로 돌려준다.
 - 서버 진입점은 얇게 두고, 배치 알고리즘 같은 로직은 순수 함수 모듈로 분리해 pytest로 테스트한다.
 - 시각은 항상 timezone-aware(`Asia/Seoul`)로 다룬다. 자정을 넘는 하루(예: 08:30~01:00), 주 경계(월요일 시작), 블록 분할, 시간 부족 표시는 테스트로 고정한다.
 - 외부 API(Notion, Google)는 얇은 클라이언트 계층 뒤에 두고, 테스트에서는 가짜 구현으로 바꾼다. 테스트가 실제 계정에 쓰지 않게 한다.
@@ -39,6 +39,8 @@
 
 ## 명령
 
+- planner 테스트: `cd mcp/planner && uv run pytest`. 의존성을 바꾸면 `uv.lock`도 커밋한다(배포는 `--frozen`).
+- planner 서버 적용 절차: `docs/setup/03-planner.md`.
 - 로컬 확인(데스크톱도 x86_64): 저장소 밖 임시 디렉터리를 `DATA_DIR`로 둔 env 파일을 만들고
   `docker compose -f deploy/compose.yaml --env-file <임시.env> up -d --build`. 확인이 끝나면 `down`하고 임시 데이터를 지운다.
 - 서버 배포: 데스크톱에서 `deploy/deploy.sh` (SSH 호스트 `server`, `ASSISTANT_HOST`로 변경). push된 `origin/main`만 배포된다. 서버 설치 절차는 `docs/setup/01-base.md`.

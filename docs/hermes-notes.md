@@ -43,9 +43,15 @@
 | K-EXAONE 키 점검 | `GET https://api.exaone.ai/v1/models`(Bearer 키)가 200과 `k-exaone_v2.5`를 돌려주면 키가 유효하다. 개인 데이터를 보내지 않는다 | 서버 확인 (2026-11-20) |
 | K-EXAONE `reasoning_effort` | `low`, `high`, `max`만 받고 기본값은 `max`. 공식 Hermes 예시는 `medium`을 쓰므로 실제 동작을 확인해야 한다 | docs.exaone.ai 모델 레퍼런스 |
 
+| MCP `env`의 `${VAR}` | `env`·`args`·`url`·`headers` 값의 `${VAR}`(또는 `${env:VAR}`)는 연결할 때 프로필 `.env`에서 채워진다. 값 전체가 설정되지 않은 변수 하나면 그 항목은 아예 빠진다. `hermes config set`은 `${NOTION_TOKEN}`을 글자 그대로 저장한다 | /reference/mcp-config-reference, 로컬 확인 (2026-11-22) |
+| MCP 등록 형식 | `mcp_servers.<name>: {command, args, env, cwd, timeout, connect_timeout, tools}`. 도구 이름은 `mcp_<server>_<tool>`, 툴셋 이름은 `mcp-<server>`. 게이트웨이는 `config.yaml` 변경을 1분 안에 반영한다 | /user-guide/features/mcp |
+| MCP 연결 점검 | `hermes mcp test <name>`: 연결 시간과 발견한 도구 목록을 보여 준다 | /reference/cli-commands, 로컬 확인 |
+| 플랫폼별 MCP 범위 | `platform_toolsets.<platform>` 목록에 MCP 서버 이름이 하나도 없으면 활성 서버 전부, 이름이 있으면 그 서버만, `no_mcp`면 없음. 빈 목록 `[]`은 MCP도 없음 | /reference/toolsets-reference |
+| MCP Python SDK | `mcp` 2.x에서 FastMCP가 `MCPServer`로 바뀌었다(`from mcp.server.mcpserver import MCPServer`). `@server.tool()`, `server.run("stdio")`, 예상한 실패는 `ToolError` | 설치된 `mcp` 2.3.0 소스 |
+| Notion API | 최신 버전 `2026-03-11`(2025-09-03 이후 유일). 데이터 소스 조회 `POST /v1/data_sources/{id}/query`, 스키마 `GET /v1/data_sources/{id}`(status `options`·`groups[].option_ids`), 페이지 생성 parent `{"type": "data_source_id", ...}`. `archived`는 `in_trash`로 바뀜. 다음 버전은 Markdown v2가 기본이 될 예정 | developers.notion.com/reference/changes-by-version, /reference/post-page (2026-11-22) |
+
 ## 구현할 때 확인할 것
 
-- [ ] `mcp_servers.*.env`에서 `${VAR}` 치환이 되는지, 아니면 값을 직접 적어야 하는지
 - [ ] `HERMES_TIMEZONE=Asia/Seoul`이 cron 일정에 실제로 적용되는지 (첫 cron을 만들 때 다음 실행 시각으로 확인)
 - [ ] K-EXAONE 도구 호출(`tools` 인자) 지원 여부와 안정성
 - [ ] 키 만료 알림 같은 일회성·간격 cron을 어떤 형식으로 만드는지

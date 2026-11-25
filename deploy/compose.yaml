@@ -11,6 +11,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${DATA_DIR:?DATA_DIR must be set in deploy/.env}:/opt/data
+      - ../mcp:/opt/mcp:ro           # MCP servers, bind-mounted until the 고정 stage bakes them in
     environment:
       TZ: Asia/Seoul                 # log timestamps, child processes
       HERMES_TIMEZONE: Asia/Seoul    # agent clock and cron schedules

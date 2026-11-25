@@ -1,0 +1,30 @@
+[project]
+name = "planner-mcp"
+version = "0.1.0"
+description = "Planner MCP server for the Hermes assistant: Notion tasks and Google Calendar"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp>=2.3.0",
+    "pyyaml>=6.0.4",
+]
+
+[project.optional-dependencies]
+# Only needed on the desktop for the one-time Google OAuth login.
+auth = [
+    "google-auth-oauthlib>=1.5.0",
+]
+
+[tool.uv]
+# Run as a plain project (python -m planner.server); nothing is built or
+# written into the source tree, so the code can be bind-mounted read-only.
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]

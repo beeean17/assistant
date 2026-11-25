@@ -7,10 +7,28 @@
 # byte-identical when the value is unchanged. The gateway is restarted only
 # when config.yaml actually changed.
 #
-# Keep SETTINGS in sync with docs/homeserver-hermes-architecture.md (모델 배분).
+# Keep SETTINGS in sync with docs/homeserver-hermes-architecture.md (모델 배분,
+# MCP 서버와 도구, 보안).
+#
+# Before writing settings it installs each MCP server's locked dependencies
+# into /opt/data/<server>/.venv, so the first MCP start does not download.
 set -euo pipefail
 
 container="${HERMES_CONTAINER:-hermes}"
+
+# MCP servers under /opt/mcp (bind-mounted from mcp/). Each is a uv project.
+MCP_SERVERS=(planner)
+
+for name in "${MCP_SERVERS[@]}"; do
+  docker exec -u hermes -w "/opt/mcp/$name" \
+    -e UV_PROJECT_ENVIRONMENT="/opt/data/$name/.venv" \
+    -e UV_CACHE_DIR=/opt/data/.cache/uv \
+    -e UV_PYTHON_DOWNLOADS=never \
+    "$container" uv sync --frozen --no-dev --quiet || {
+      echo "configure: uv sync failed for MCP server $name" >&2
+      exit 1
+    }
+done
 
 # One "key<TAB>value" per line. Values are YAML literals.
 SETTINGS=$(cat <<'EOF'
@@ -21,6 +39,8 @@ auxiliary.compression.model	gpt-6-luna
 auth.adopt_external_logins	false
 providers.exaone	{api: "https://api.exaone.ai/v1", key_env: EXAONE_API_KEY, transport: chat_completions, default_model: k-exaone_v2.5, extra_body: {temperature: 1.0, top_p: 0.95}}
 fallback_providers	[{provider: exaone, model: k-exaone_v2.5}]
+mcp_servers.planner	{command: uv, args: [run, --frozen, --no-dev, python, -m, planner.server], cwd: /opt/mcp/planner, connect_timeout: 120, timeout: 60, env: {NOTION_TOKEN: "${NOTION_TOKEN}", PLANNER_CONFIG: /opt/data/planner/planner.yaml, GOOGLE_TOKEN_FILE: /opt/data/planner/google_token.json, UV_PROJECT_ENVIRONMENT: /opt/data/planner/.venv, UV_CACHE_DIR: /opt/data/.cache/uv, UV_PYTHON_DOWNLOADS: never}}
+platform_toolsets.discord	[memory, session_search, planner]
 EOF
 )
 
